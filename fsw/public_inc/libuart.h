@@ -43,6 +43,8 @@ ivv-itc@lists.nasa.gov
     #define OS_ERR_FILE        -2    
 #endif
 
+#define UART_SUCCESS             OS_SUCCESS
+
 /* data types */
 typedef struct
 {

@@ -79,8 +79,10 @@ int32 EPS_LibInit(void)
 {
 
     int status;
-
-    if ( (status = OS_MutSemCreate(&eps_i2c_transaction_mutex, "EPS_I2C_MUTEX", 0)) != OS_SUCCESS)
+   
+    status = OS_MutSemCreate(&eps_i2c_transaction_mutex, "EPS_I2C_MUTEX", 0);
+      
+    if ( status != OS_SUCCESS) // if OS_ is not successful. 
     {
         CFE_EVS_SendEvent(EPSLIB_MUTEX_ERR_EID, CFE_EVS_ERROR, 
                           "EPS LIB: Error - failed to create i2c transaction mutex");

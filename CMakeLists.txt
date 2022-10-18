@@ -4,7 +4,7 @@ project(CFS_HWLIB C)
 # flight/nos psp names (based on CFE_SYSTEM_PSPNAME set by the toolchain from targets.cmake)
 set(NOS_PSPNAME "nos-linux")
 
-include(../ComponentSettings.cmake)
+include(../../../components/ComponentSettings.cmake)
 
 # hwlib include directories
 include_directories(fsw/mission_inc

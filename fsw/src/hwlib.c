@@ -46,7 +46,7 @@ ivv-itc@lists.nasa.gov
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /*                                                                 */
-/* HW Library Initialization Routine                         */
+/* HW Library Initialization Routine                               */
 /* cFE requires that a library have an initialization routine      */ 
 /*                                                                 */
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -63,46 +63,7 @@ int32 hwlib_Init(void)
     ** Init all hardware subsystems and interfaces
     ** order may be important.
     */
-    /* HWLIB initialization event */
-    CFE_EVS_SendEvent(HWLIB_INIT_EID, CFE_EVS_INFORMATION,
-        "HWLIB Initialized. Version %d.%d.%d.%d",
-        HW_LIB_MAJOR_VERSION,
-        HW_LIB_MINOR_VERSION,
-        HW_LIB_REVISION,
-        HW_LIB_MISSION_REV);
-    
-    /* Initialize the CAM Lib 
-    status = CAM_LibInit();
-    if (status == OS_SUCCESS)
-    {
-        CFE_EVS_SendEvent(HWLIB_INIT_EID, CFE_EVS_INFORMATION, "CAM Lib HW Init Success");
-    }
-    else
-    {
-        CFE_EVS_SendEvent(HWLIB_INIT_EID, CFE_EVS_ERROR, "CAM Lib HW Init ERROR = 0x%dx\n", status);
-    } */
-
-    /* Initialize the EPS Lib  
-    status = EPS_LibInit();
-    if (status == OS_SUCCESS)
-    {
-        CFE_EVS_SendEvent(HWLIB_INIT_EID, CFE_EVS_INFORMATION, "EPS Lib HW Init Success");
-    }
-    else
-    {
-        CFE_EVS_SendEvent(HWLIB_INIT_EID, CFE_EVS_ERROR, "EPS Lib HW Init ERROR = 0x%dx\n", status);
-    } */
-
-    /* Initialize the NAV Lib
-    status = NAV_LibInit();
-    if (status == OS_SUCCESS)
-    {
-        CFE_EVS_SendEvent(HWLIB_INIT_EID, CFE_EVS_INFORMATION,"NAV Lib HW Init Success");
-    }
-    else
-    {
-        CFE_EVS_SendEvent(HWLIB_INIT_EID, CFE_EVS_ERROR, "NAV Lib HW Init ERROR = 0x%dx", status);
-    } */
+    OS_printf("HWLIB Initialized. Version %d.%d.%d.%d \n", HW_LIB_MAJOR_VERSION, HW_LIB_MINOR_VERSION, HW_LIB_REVISION, HW_LIB_MISSION_REV);
 
     return OS_SUCCESS;
 }

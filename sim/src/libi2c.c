@@ -68,6 +68,12 @@ void nos_destroy_i2c_link(void)
     int32 result = OS_MutSemDelete(nos_i2c_mutex);
 }
 
+int32_t i2c_master_init(i2c_bus_info_t* device)
+{
+    // Do nothing;
+    return OS_SUCCESS;
+}
+
 /* nos i2c transaction */
 int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8_t txlen,
                                void * rxbuf, uint8_t rxlen, uint16_t timeout)
@@ -86,7 +92,7 @@ int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8
             const nos_connection_t *con = &nos_i2c_connection[handle];
 
             /* try to initialize master */
-            *dev = NE_i2c_init_master3(hub, 10, con->uri, con->bus);
+            *dev = NE_i2c_init_master3(hub, 10, con->uri, con->bus); // the value 10 indicates it's the master on the bus
             if(*dev == NULL)
             {
                 OS_printf("nos i2c_init_master failed\n");
@@ -96,13 +102,40 @@ int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8
         /* i2c transaction */
         if(*dev)
         {
-            if(NE_i2c_transaction(*dev, addr, txbuf, txlen, rxbuf, rxlen) == NE_I2C_SUCCESS)
+            if ((txlen == 0) && (rxlen == 0)) { // force success if both buffer lengths are 0
+                result = OS_SUCCESS;
+            } else if(NE_i2c_transaction(*dev, addr, txbuf, txlen, rxbuf, rxlen) == NE_I2C_SUCCESS)
             {
                 result = OS_SUCCESS;
             }
         }
 
         OS_MutSemGive(nos_i2c_mutex);
+    }
+
+    return result;
+}
+
+int32_t i2c_multiple_transaction(int32_t handle, uint8_t addr, struct i2c_rdwr_ioctl_data* rdwr_data, uint16_t timeout)
+{
+    int32_t result = OS_ERROR;
+    uint32_t i;
+
+    for (i = 0; i < rdwr_data->nmsgs; i++)
+    {
+        if (rdwr_data->msgs[i].flags == 0)
+        {   // Write
+            result = i2c_master_transaction(handle, addr, (void*) rdwr_data->msgs[i].buf, (uint8_t) rdwr_data->msgs[i].len, (void*) NULL, 0, timeout);
+        }
+        else
+        {   // Read
+            result = i2c_master_transaction(handle, addr, (void*) NULL, 0, (void*) rdwr_data->msgs[i].buf, (uint8_t) rdwr_data->msgs[i].len, timeout);
+        }
+        
+        if (result != OS_SUCCESS)
+        {
+            break;
+        }
     }
 
     return result;

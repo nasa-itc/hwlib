@@ -215,3 +215,12 @@ int32 spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer, u
 
     return status;
 }
+
+int32 spi_close_device(spi_info_t* device)
+{
+	int status = SPI_SUCCESS;
+
+	// TODO Implement this function!
+
+	return status;
+}

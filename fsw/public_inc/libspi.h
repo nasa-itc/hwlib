@@ -21,6 +21,7 @@ ivv-itc@lists.nasa.gov
 /*
 ** Includes
 */ 
+#include "hwlib.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -29,26 +30,33 @@ ivv-itc@lists.nasa.gov
 #ifdef __linux__    
   #include <fcntl.h>      /* for posix open()  */
   #include <unistd.h>     /* for posix close() */
-	#include <sys/ioctl.h>
-	#include <linux/types.h>
-	#include <linux/spi/spidev.h>
+  #include <sys/ioctl.h>
+  #include <linux/types.h>
+  #include <linux/spi/spidev.h>
 #endif
 
-#include <cfe.h>
-#include <osapi.h>
+
+#ifdef __rtems__
+    #include <rtems.h>
+    #include <bsp.h>
+
+    #include <errno.h>
+    #include <sys/types.h>
+    #include <sys/stat.h>
+    #include <fcntl.h>
+
+    #include <rtems/libi2c.h>
+    #include <rtems/libio.h>
+    #include <grlib/spictrl.h>
+    #include <rtems/bspIo.h>
+#endif
+
 
 /*
 ** Definitions
 */
 #define SPI_DEVICE_CLOSED    0
 #define SPI_DEVICE_OPEN      1
-
-#ifndef OS_SUCCESS
-    // Building Outside of cFS
-    #define OS_SUCCESS          0
-    #define OS_ERROR           -1
-    #define OS_ERR_FILE        -2    
-#endif
 
 #define SPI_SUCCESS        		  OS_SUCCESS
 #define SPI_ERROR          		  OS_ERROR
@@ -72,12 +80,12 @@ ivv-itc@lists.nasa.gov
 */
 typedef struct 
 {
-	uint32 spi_mutex;
+	uint32_t spi_mutex;
 	uint8_t  users;
 } spi_mutex_t;
 
 typedef struct {
-	char*     deviceString;  /* uart string descriptor of the port  */
+	const char*     deviceString;  /* uart string descriptor of the port  */
 	int32_t   handle;	       /* handle to the hardware device */
 	uint8_t   bus;           /* bus number for mutex use */
 	uint8_t   cs;			       /* chip Select */

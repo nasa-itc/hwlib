@@ -188,19 +188,19 @@ int32_t can_master_transaction(can_info_t* device)
     OS_MutSemGive(nos_can_mutex);
 
     #ifdef LIBCAN_VERBOSE
-        printf("can_master_transaction: \n");
-        printf("  can_id = 0x%08x \t tx: 0x", device->tx_frame.can_id);
+        OS_printf("can_master_transaction: \n");
+        OS_printf("  can_id = 0x%08x \t tx: 0x", device->tx_frame.can_id);
         for (i = 0; i < device->tx_frame.can_dlc; i++)
         {
-        printf("%02x ", device->tx_frame.data[i]);
+        OS_printf("%02x ", device->tx_frame.data[i]);
         }
-        printf("\n");
-        printf("  can_id = 0x%08x \t rx: 0x", device->rx_frame.can_id);
+        OS_printf("\n");
+        OS_printf("  can_id = 0x%08x \t rx: 0x", device->rx_frame.can_id);
         for (i = 0; i < device->rx_frame.can_dlc; i++)
         {
-        printf("%02x ", device->rx_frame.data[i]);
+        OS_printf("%02x ", device->rx_frame.data[i]);
         }
-        printf("\n");
+        OS_printf("\n");
     #endif
 
     return result;

@@ -33,14 +33,14 @@ int32_t i2c_master_init(i2c_bus_info_t* device)
     device->handle = open(devname, O_RDWR);
     if (device->handle < 0)
     {
-        printf("i2c bus open failed for handle = %d, %s\n", device->handle, strerror(errno));
+        OS_printf("i2c bus open failed for handle = %d, %s\n", device->handle, strerror(errno));
         status = I2C_ERROR;
         device->isOpen = I2C_CLOSED;
     }
     else
     {
         device->isOpen = I2C_OPEN;
-        printf("i2c bus open passed for handle = %d\n", device->handle);
+        OS_printf("i2c bus open passed for handle = %d\n", device->handle);
     }
     return status;
 }
@@ -53,7 +53,7 @@ int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8
     /* Set I2C slave address */
     if (ioctl(handle, I2C_SLAVE, addr) < 0)
     {
-        printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+        OS_printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
         status = I2C_ERROR;
         return status;
     }
@@ -64,7 +64,7 @@ int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8
         resp = write(handle, txbuf, txlen);
         if (resp != txlen)
         {
-            printf("i2c-%d write to address 0x%X FAILED, [%u] %s\n", handle, addr, errno, strerror(errno));
+            OS_printf("i2c-%d write to address 0x%X FAILED, [%u] %s\n", handle, addr, errno, strerror(errno));
             status = I2C_ERROR;
         }
     }
@@ -74,7 +74,7 @@ int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8
         resp = read(handle, rxbuf, rxlen);
         if (resp != rxlen)
         {
-            printf("i2c-%d read from address 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+            OS_printf("i2c-%d read from address 0x%X FAILED, %s\n", handle, addr, strerror(errno));
             status = I2C_ERROR;
         }
     }
@@ -90,7 +90,7 @@ int32_t i2c_read_transaction(int32_t handle, uint8_t addr, void * rxbuf, uint8_t
     /* Set I2C slave address */
     if (ioctl(handle, I2C_SLAVE, addr) < 0)
     {
-        printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+        OS_printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
         status = I2C_ERROR;
         return status;
     }
@@ -98,7 +98,7 @@ int32_t i2c_read_transaction(int32_t handle, uint8_t addr, void * rxbuf, uint8_t
     resp = read(handle, rxbuf, rxlen); //<-- ACK would need to go in here
     if (resp != rxlen)
     {
-        printf("i2c-%d read from address 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+        OS_printf("i2c-%d read from address 0x%X FAILED, %s\n", handle, addr, strerror(errno));
         status = I2C_ERROR;
     }
 
@@ -113,7 +113,7 @@ int32_t i2c_write_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8_
     /* Set I2C slave address */
     if (ioctl(handle, I2C_SLAVE, addr) < 0)
     {
-        printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+        OS_printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
         status = I2C_ERROR;
         return status;
     }
@@ -121,7 +121,7 @@ int32_t i2c_write_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8_
     resp = write(handle, txbuf, txlen);
     if (resp != txlen)
     {
-        printf("i2c-%d write from address 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+        OS_printf("i2c-%d write from address 0x%X FAILED, %s\n", handle, addr, strerror(errno));
         status = I2C_ERROR;
     }
 
@@ -136,7 +136,7 @@ int32_t i2c_multiple_transaction(int32_t handle, uint8_t addr, struct i2c_rdwr_i
     /* Set I2C slave address */
     if (ioctl(handle, I2C_SLAVE, addr) < 0)
     {
-        printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+        OS_printf("i2c-%d setting slave address = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
         status = I2C_ERROR;
         return status;
     }
@@ -144,7 +144,7 @@ int32_t i2c_multiple_transaction(int32_t handle, uint8_t addr, struct i2c_rdwr_i
     /* Make the ICOTL call */
     if (ioctl(handle, I2C_RDWR, rdwr_data) < 0)
     {
-        printf("i2c-%d multple transaction error = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
+        OS_printf("i2c-%d multple transaction error = 0x%X FAILED, %s\n", handle, addr, strerror(errno));
         status = I2C_ERROR;
         return status;
     }

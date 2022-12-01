@@ -144,7 +144,7 @@ int32_t uart_init_port(uart_info_t* device)
   }
   else
   {
-      printf("Oh no!  Open \"%s\" failed and reported: %s \n", device->deviceString, strerror(device->handle));
+      OS_printf("Oh no!  Open \"%s\" failed and reported: %s \n", device->deviceString, strerror(device->handle));
       device->isOpen = PORT_CLOSED;
       status = OS_ERR_FILE;
   }

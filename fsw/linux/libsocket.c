@@ -76,8 +76,8 @@ int32_t socket_create(socket_info_t* socket_info)
     // Assign values to the socket_info structure 
     socket_info->sockfd = ret;
     socket_info->created = true;
-    printf("socket_info->sockfd = %d\n",socket_info->sockfd);
-    printf("socket_info->created = %d\n",socket_info->created);
+    OS_printf("socket_info->sockfd = %d\n",socket_info->sockfd);
+    OS_printf("socket_info->created = %d\n",socket_info->created);
 
     // Bind server sockets to localhost and port number
     if(socket_info->category==server || socket_info->type==dgram)
@@ -97,7 +97,7 @@ int32_t socket_create(socket_info_t* socket_info)
 
         // Assign values to the socket_info structure
         socket_info->bound = true;
-        printf("socket_info->bound = %d\n",socket_info->bound);
+        OS_printf("socket_info->bound = %d\n",socket_info->bound);
     }
 
     // Make socket non-blocking?
@@ -152,7 +152,7 @@ int32_t socket_listen(socket_info_t* socket_info)
 
     // Assign values to the socket_info structure
     socket_info->listening = true;
-    printf("socket_info->listening = %d\n",socket_info->listening);
+    OS_printf("socket_info->listening = %d\n",socket_info->listening);
 
     return status;
 }
@@ -206,8 +206,8 @@ int32_t socket_accept(socket_info_t* socket_info)
     // Assign values to the socket_info structure
     socket_info->sockfd = ret;
     socket_info->connected = true;
-    printf("socket_info->sockfd = %d\n",socket_info->sockfd);
-    printf("socket_info->connected = %d\n",socket_info->connected);
+    OS_printf("socket_info->sockfd = %d\n",socket_info->sockfd);
+    OS_printf("socket_info->connected = %d\n",socket_info->connected);
 
     return status;
 } 
@@ -327,14 +327,14 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
             ret = sendto(socket_info->sockfd, (void*)buffer, buflen, 0, (struct sockaddr *)&remote_sockaddr , sizeof(remote_sockaddr));
             if(ret == -1)
             {
-                printf("socket_send: sendto returned error %d \n", ret);
+                OS_printf("socket_send: sendto returned error %d \n", ret);
                 status = SOCKET_SEND_ERR;     
                 return status;           
             }
 
             if(ret != (int) buflen)
             {
-                printf("socket_send: sendto sent only %d out of %d bytes! \n", ret, buflen);
+                OS_printf("socket_send: sendto sent only %d out of %d bytes! \n", ret, buflen);
             }
 
             *bytes_sent = ret;

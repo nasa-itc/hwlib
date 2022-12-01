@@ -38,30 +38,19 @@ ivv-itc@lists.nasa.gov
 ** Outside of cFS build
 *************************************************************************/
 #ifndef OS_SUCCESS
-    // Building Outside of cFS
+    #define OS_printf           printf
+    #define OS_TaskDelay(n)     ( usleep((n) * 1000) )
     #define OS_PACK
     #define OS_SUCCESS          0
     #define OS_ERROR           -1
     #define OS_ERR_FILE        -2
+    #ifdef SOFTWARE_BIG_BIT_ORDER
+      #define CFE_MAKE_BIG16(n) (n)
+      #define CFE_MAKE_BIG32(n) (n)
+    #else
+      #define CFE_MAKE_BIG16(n) ( (((n) << 8) & 0xFF00) | (((n) >> 8) & 0x00FF) )
+      #define CFE_MAKE_BIG32(n) ( (((n) << 24) & 0xFF000000) | (((n) << 8) & 0x00FF0000) | (((n) >> 8) & 0x0000FF00) | (((n) >> 24) & 0x000000FF) )
+    #endif
 #endif
 
-/************************************************************************
-** CFE_IS_LITTLE16/32
-** Note: Use to specify a value is a 16bit or 32 bit little endian value
-*************************************************************************/
-#ifdef SOFTWARE_BIG_BIT_ORDER
-  #define CFE_IS_LITTLE16(n) ( (((n) << 8) & 0xFF00) | (((n) >> 8) & 0x00FF) )
-  #define CFE_IS_LITTLE32(n) ( (((n) << 24) & 0xFF000000) | (((n) << 8) & 0x00FF0000) | (((n) >> 8) & 0x0000FF00) | (((n) >> 24) & 0x000000FF) )
-#else
-  #define CFE_IS_LITTLE16(n) (n)
-  #define CFE_IS_LITTLE32(n) (n)
-#endif
-
-/************************************************************************
-** CFE_IS_BIG16/32
-** Note: Use to specify a value is a 16bit or 32 bit big endian value
-*************************************************************************/
-#define CFE_IS_BIG16(n) CFE_MAKE_BIG16(n)
-#define CFE_IS_BIG32(n) CFE_MAKE_BIG32(n)
-
-#endif
+#endif /* _hwlib_h_ */

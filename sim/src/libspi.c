@@ -75,7 +75,7 @@ int32 spi_init_dev(spi_info_t* device)
             status = OS_MutSemCreate(&spi_bus_mutex[device->bus].spi_mutex, buffer, 0);
             if (status != OS_SUCCESS)
             {
-                CFE_EVS_SendEvent(SPI_ERR_MUTEX_CREATE, CFE_EVS_ERROR, "HWLIB: Create spi mutex error %d", status);
+                OS_printf("HWLIB: Create spi mutex error %d", status);
                 return status;
             }
         }
@@ -83,7 +83,7 @@ int32 spi_init_dev(spi_info_t* device)
     }
     else
     {
-        CFE_EVS_SendEvent(SPI_ERR_MUTEX_CREATE, CFE_EVS_ERROR, "HWLIB: Create spi mutex error %d, bus invalid!", status);
+        OS_printf("HWLIB: Create spi mutex error %d, bus invalid!", status);
         return status;
     }
 
@@ -105,7 +105,7 @@ int32 spi_init_dev(spi_info_t* device)
             else
             {
                 OS_MutSemGive(spi_bus_mutex[device->bus].spi_mutex);
-                CFE_EVS_SendEvent(SPI_ERR_FILE_OPEN, CFE_EVS_ERROR, "HWLIB: Open SPI device \"%s\" error %d", device->deviceString, status);
+                OS_printf("HWLIB: Open SPI device \"%s\" error %d", device->deviceString, status);
                 return status;
             }
         }

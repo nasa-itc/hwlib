@@ -214,7 +214,11 @@ int32_t uart_close_port(int32_t handle)
     NE_Uart *dev = nos_get_usart_device((int)handle);
     if (handle >= 0)
     {
-        status = NE_uart_close(&dev);
+        if(dev)
+        {
+            status = NE_uart_close(&dev);
+            usart_device[handle] = 0;
+        }
     }
     if (status == NE_UART_SUCCESS) {
         return OS_SUCCESS;

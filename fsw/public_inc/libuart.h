@@ -96,7 +96,7 @@ int32_t uart_flush(int32_t handle);
  * @param handle handle to the uart port when open
  * @param data array to store the read data
  * @param numBytes number of bytes to read off the port
- * @return Returns number of byter successfully read
+ * @return Returns number of bytes successfully read
 */
 int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes);
 

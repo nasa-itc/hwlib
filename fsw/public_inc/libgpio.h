@@ -19,22 +19,16 @@ ivv-itc@lists.nasa.gov
 #define _lib_gpio_h_
 
 /* Includes */
+#include "hwlib.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
-#if defined __linux__ || defined __rtems__
+#if defined __linux__ 
     #include <fcntl.h>
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/ioctl.h>
-#endif
-
-/* Building Outside of cFS */
-#ifndef OS_SUCCESS
-    #define OS_SUCCESS          0
-    #define OS_ERROR           -1
-    #define OS_ERR_FILE        -2  
 #endif
 
 /* Defines */
@@ -49,6 +43,10 @@ ivv-itc@lists.nasa.gov
 
 #define GPIO_OPEN               1
 #define GPIO_CLOSED             0
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Structures */
 typedef struct
@@ -89,5 +87,9 @@ int32_t gpio_write(gpio_info_t* device, uint8_t value);
  * @return Returns GPIO_SUCCESS or an error code defined above
  */
 int32_t gpio_close(gpio_info_t* device);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

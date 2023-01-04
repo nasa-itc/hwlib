@@ -1,6 +1,12 @@
 # Hardware Library
 The hardware library provides an abstraction layer for hardware interfaces across platforms such as:
+* linux
 * nos-linux
+
+Note that the hardware library does not include `cfe.h` or `osapi.h`.
+When using with cFS these includes must be in the `cpuX_device_cfg.h` file.
+
+# Protocol Specifics
 
 ## CAN
 Note that the currently maximum number of allocated devices is 30.

@@ -19,14 +19,15 @@ ivv-itc@lists.nasa.gov
 #define _lib_can_h_
 
 /* Includes */
+#include "hwlib.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
-#include <libsocketcan.h>
 
 #ifdef __linux__
+    #include <libsocketcan.h>
     #include <unistd.h>
     #include <net/if.h>
     #include <sys/types.h>
@@ -37,9 +38,11 @@ ivv-itc@lists.nasa.gov
     #include <linux/if.h>
     #include <sys/time.h>
     #include <errno.h>
+    #include <fcntl.h>
 #endif
 
 /* Definitions */
+//#define LIBCAN_VERBOSE
 #define CAN_INTERFACE_UP        1
 #define CAN_INTERFACE_DOWN      0
 
@@ -60,12 +63,6 @@ ivv-itc@lists.nasa.gov
 
 #define CAN_MAX_DLEN 8
 
-/* Building Outside of cFS */
-#ifndef OS_SUCCESS
-    #define OS_SUCCESS          0
-    #define OS_ERROR           -1
-#endif
-
 #define CAN_SUCCESS             OS_SUCCESS
 #define CAN_ERROR               OS_ERROR
 #define CAN_UP_ERR              -2
@@ -85,14 +82,17 @@ ivv-itc@lists.nasa.gov
 ** These defines work around the multiple wheels talking to a single sim
 */
 #define CW_CAN_HANDLE        0
-#define CW_CAN_HANDLE_STR    "/dev/can0"
+#ifdef __linux__
+    #define CW_CAN_HANDLE_STR    "can0"
+#else
+    #define CW_CAN_HANDLE_STR    "grcan0"
+#endif
+#define CW_SRC_MASK          0x10
 #define CW_ADDRESS           0x14
-#define CW_WHL1_MASK         0x01
-#define CW_WHL2_MASK         0x02
-#define CW_WHL3_MASK         0x03
-#define CW_TIMEOUT	         1
-#define CW_BASE_CMD_LEN      5
-#define CW_CAN_BASE_CMD_LEN  4
+#define CW_WHL1_MASK         0x33 // 51 - it assumed these are sequential values in the app
+#define CW_WHL2_MASK         0x34 // 52
+#define CW_WHL3_MASK         0x35 // 53
+
 // end cubewheel specific defines
 
 /*
@@ -104,6 +104,18 @@ ivv-itc@lists.nasa.gov
  * bit 31	: frame format flag (0 = standard 11 bit, 1 = extended 29 bit)
  */
 typedef uint32_t canid_t;
+
+#ifdef __rtems__
+/**
+ * struct can_frame - basic CAN frame structure
+ * TODO: not tested with GRCAN
+ */
+struct can_frame{
+    uint32_t  can_id;  /* 32 bit CAN_ID*/
+    uint8_t   can_dlc; /* frame payload length in byte (0 .. CAN_MAX_DLEN) */
+    uint8_t   data[CAN_MAX_DLEN];
+};
+#endif
 
 /* CAN device info struct */
 typedef struct 
@@ -122,19 +134,17 @@ typedef struct
     bool        fd;
     bool        presumeAck;
     uint32_t    bitrate;  /* bitrate for CAN device */  
+    uint32_t    second_timeout;
+    uint32_t    microsecond_timeout;
+    uint32_t    xfer_us_delay;
+    struct can_frame tx_frame;
+    struct can_frame rx_frame;
+    #ifdef __linux__
+        struct ifreq ifr;
+        struct sockaddr_can addr;
+        int sock;
+    #endif
 } can_info_t;
-
-#ifdef __rtems__
-/**
- * struct can_frame - basic CAN frame structure
- * TODO: not tested with GRCAN
- */
-struct can_frame{
-    uint32_t  can_id;  /* 32 bit CAN_ID*/
-    uint8_t   can_dlc; /* frame payload length in byte (0 .. CAN_MAX_DLEN) */
-    uint8_t   data[CAN_MAX_DLEN];
-};
-#endif
 
 /**
  * Initialize CAN device
@@ -159,17 +169,7 @@ int32_t can_set_modes(can_info_t* device);
  * @param length number of bytes to write the port (length of buf)
  * @return Returns CAN_SUCCESS or CAN_ERROR
 */
-int32_t can_write(can_info_t* device, uint32_t can_id, uint8_t* buf, const uint32_t length);
-
-/**
- * Blocking read for a number of bytes off of a given CAN interface
- * 
- * @param device can_info_t struct with all can params
- * @param can_frame readFrame pointer to read CAN frame
- * @param length number of bytes to read off the port
- * @return Returns CAN_SUCCESS or CAN_ERROR
-*/
-int32_t can_blocking_read(can_info_t* device, struct can_frame* readFrame, const uint32_t length);
+int32_t can_write(can_info_t* device);
 
 /**
  * Non-blocking read for a number of bytes off of a given CAN interface
@@ -177,11 +177,9 @@ int32_t can_blocking_read(can_info_t* device, struct can_frame* readFrame, const
  * @param device can_info_t struct with all can params
  * @param can_frame readFrame pointer to read CAN frame
  * @param length number of bytes to read off the port
- * @param second_timeout seconds to wait for before timing out. Used in combo with microsecond_timeout
- * @param microsecond_timeout microseconds to wait for before timing out. Used in combo with second_timeout 
  * @return Returns CAN_SUCCESS or CAN_ERROR
 */
-int32_t can_nonblocking_read(can_info_t* device, struct can_frame* readFrame, const uint32_t length, uint32_t second_timeout, uint32_t microsecond_timeout);
+int32_t can_read(can_info_t* device);
 
 /**
  * Close the CAN device 
@@ -200,10 +198,8 @@ int32_t can_close_device(can_info_t* device);
  * @param txlen number of bytes to write the port (length of buf)
  * @param rxbuf readFrame pointer to read CAN frame
  * @param rxlen number of bytes to read off the port
- * @param second_timeout seconds to wait for before timing out. Used in combo with microsecond_timeout
- * @param microsecond_timeout microseconds to wait for before timing out. Used in combo with second_timeout 
  * @return Returns CAN_SUCCESS or CAN_ERROR
  */
-int32_t can_master_transaction(can_info_t* device, uint32_t can_id, uint8_t* txbuf, const uint32_t txlen, uint8_t* rxbuf, const uint32_t rxlen, uint32_t second_timeout, uint32_t microsecond_timeout);
+int32_t can_master_transaction(can_info_t* device);
 
 #endif // _lib_can_h_

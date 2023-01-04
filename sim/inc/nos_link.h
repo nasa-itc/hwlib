@@ -21,10 +21,11 @@ ivv-itc@lists.nasa.gov
 /* nos */
 #include <Client/CInterface.h>
 
-#define NUM_USARTS      30
-#define NUM_I2C_DEVICES 30
-#define NUM_CAN_DEVICES 30
-#define NUM_SPI_DEVICES 30
+#define NUM_USARTS       30
+#define NUM_I2C_DEVICES  30
+#define NUM_CAN_DEVICES  30
+#define NUM_SPI_DEVICES  30
+#define NUM_GPIO_DEVICES 30
 
 #ifdef __cplusplus
 extern "C" {

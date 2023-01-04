@@ -30,6 +30,8 @@ ivv-itc@lists.nasa.gov
 
 #include "libcan.h"
 
+#define CW_CAN_BASE_CMD_LEN  8
+
 /* can device handles */
 static NE_CanHandle *can_device[NUM_CAN_DEVICES] = {0};
 
@@ -140,28 +142,22 @@ int32_t can_set_modes(can_info_t* device)
 	return CAN_SUCCESS;
 }
 
-// Write out to CAN bus from CAN device specified by `device`.
-int32_t can_write(can_info_t* device, uint32_t can_id, uint8_t* buf, const uint32_t length)
+// Write a can_frame  from `device->tx_Frame` to CAN bus from SocketCAN socket specified by `device`
+int32_t can_write(can_info_t* device)
 {
-    return can_master_transaction(CW_CAN_HANDLE, can_id, buf, length, NULL, 0, 0, 0);
+    return can_master_transaction(device);
 }
 
-// Read a can_frame from CAN interface specified by `device->handle`. Does a blocking read call.
-int32_t can_blocking_read(can_info_t* device, struct can_frame* readFrame, const uint32_t length)
+// Read a can_frame from SocketCAN interface specified by `device` into `device->rx_frame`
+int32_t can_read(can_info_t* device)
 {
-    return can_master_transaction(CW_CAN_HANDLE, readFrame->can_id << 3, NULL, 0, &(readFrame->data[0]), length, 0, 0);
+    return can_master_transaction(device);
 }
 
-// Read a can_frame from CAN interface specified by `device->handle`. Does a nonblocking read call.
-int32_t can_nonblocking_read(can_info_t* device, struct can_frame* readFrame, const uint32_t length, uint32_t second_timeout, uint32_t microsecond_timeout) 
+int32_t can_master_transaction(can_info_t* device)
 {
-    return can_master_transaction(CW_CAN_HANDLE, readFrame->can_id << 3, NULL, 0, &(readFrame->data[0]), length, 0, 0);
-}
-
-//int32 can_master_transaction(int handle, uint32_t identifier, void * txbuf, uint8_t txlen, void * rxbuf, uint8_t rxlen, uint16_t timeout)
-int32_t can_master_transaction(can_info_t* device, uint32_t can_id, uint8_t* txbuf, const uint32_t txlen, uint8_t* rxbuf, const uint32_t rxlen, uint32_t second_timeout, uint32_t microsecond_timeout)
-{
-    int result = OS_ERROR;
+    int result = CAN_ERROR;
+    int i;
     
     /* get can device handle */
     NE_CanHandle *dev = nos_get_can_device(device);
@@ -170,24 +166,42 @@ int32_t can_master_transaction(can_info_t* device, uint32_t can_id, uint8_t* txb
     OS_MutSemTake(nos_can_mutex);
     if(dev)
     {
-        if ( (can_id & 0xF) == CW_WHL1_MASK || (can_id & 0xF) == CW_WHL2_MASK || (can_id & 0xF) == CW_WHL3_MASK )
+        if ( (device->tx_frame.can_id & 0xFF) == CW_WHL1_MASK || (device->tx_frame.can_id & 0xFF) == CW_WHL2_MASK || (device->tx_frame.can_id & 0xFF) == CW_WHL3_MASK )
         {
-            result = NE_can_transaction(dev, CW_ADDRESS, txbuf, txlen, rxbuf, rxlen);                
+            result = NE_can_transaction(dev, CW_ADDRESS, 
+                                       (uint8_t*) &device->tx_frame, device->tx_frame.can_dlc + CW_CAN_BASE_CMD_LEN, 
+                                       (uint8_t*) &device->rx_frame, CW_CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
         }            
-
-        else if (can_id == CW_ADDRESS)
+        else if (device->tx_frame.can_id == CW_ADDRESS)
         {
-            result = NE_can_transaction(dev, CW_ADDRESS, txbuf, txlen, rxbuf, rxlen);            
+            result = NE_can_transaction(dev, CW_ADDRESS, 
+                                       (uint8_t*) &device->tx_frame, device->tx_frame.can_dlc + CW_CAN_BASE_CMD_LEN, 
+                                       (uint8_t*) &device->rx_frame, CW_CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
         }
-
         else 
         {
-            //OS_printf("LIBCAN: %s:  CAN IDENTIFIER IS NOT CW_ADDRESS, NOR CONTAINS THE WHEEL CAN MASKS\n", __FUNCTION__);
-            result = NE_can_transaction(dev, can_id, txbuf, txlen, rxbuf, rxlen);
+            result = NE_can_transaction(dev, device->tx_frame.can_id,
+                                       (uint8_t*) &device->tx_frame, device->tx_frame.can_dlc + CW_CAN_BASE_CMD_LEN, 
+                                       (uint8_t*) &device->rx_frame, CW_CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
         }
     }
-
     OS_MutSemGive(nos_can_mutex);
+
+    #ifdef LIBCAN_VERBOSE
+        OS_printf("can_master_transaction: \n");
+        OS_printf("  can_id = 0x%08x \t tx: 0x", device->tx_frame.can_id);
+        for (i = 0; i < device->tx_frame.can_dlc; i++)
+        {
+        OS_printf("%02x ", device->tx_frame.data[i]);
+        }
+        OS_printf("\n");
+        OS_printf("  can_id = 0x%08x \t rx: 0x", device->rx_frame.can_id);
+        for (i = 0; i < device->rx_frame.can_dlc; i++)
+        {
+        OS_printf("%02x ", device->rx_frame.data[i]);
+        }
+        OS_printf("\n");
+    #endif
 
     return result;
 }

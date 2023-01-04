@@ -21,26 +21,36 @@ ivv-itc@lists.nasa.gov
 
 /* HWLIB Event IDs for Logging */
 #define HWLIB_INIT_EID  1
-#define HWLIB_GPS_EID   2
-#define HWLIB_CAM_EID   3
 
 /************************************************************************
 ** Includes
 *************************************************************************/
- 
-// OSAL
-#include "osapi.h"
-
-// APIs
 #include "libcan.h"
 #include "libi2c.h"
 #include "libmem.h"
-#include "libpwm.h"
+#include "libtrq.h"
 #include "libspi.h"
 #include "libuart.h"
+#include "libgpio.h"
+#include "libsocket.h"
 
-// Components
-#include "cam_lib.h"
-#include "eps_lib.h"
-
+/************************************************************************
+** Outside of cFS build
+*************************************************************************/
+#ifndef OS_SUCCESS
+    #define OS_printf           printf
+    #define OS_TaskDelay(n)     ( usleep((n) * 1000) )
+    #define OS_PACK
+    #define OS_SUCCESS          0
+    #define OS_ERROR           -1
+    #define OS_ERR_FILE        -2
+    #ifdef SOFTWARE_BIG_BIT_ORDER
+      #define CFE_MAKE_BIG16(n) (n)
+      #define CFE_MAKE_BIG32(n) (n)
+    #else
+      #define CFE_MAKE_BIG16(n) ( (((n) << 8) & 0xFF00) | (((n) >> 8) & 0x00FF) )
+      #define CFE_MAKE_BIG32(n) ( (((n) << 24) & 0xFF000000) | (((n) << 8) & 0x00FF0000) | (((n) >> 8) & 0x0000FF00) | (((n) >> 24) & 0x000000FF) )
+    #endif
 #endif
+
+#endif /* _hwlib_h_ */

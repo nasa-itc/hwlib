@@ -32,7 +32,7 @@ void *Xil_MMAP(__off_t address, size_t length){
 
 	if((sysaddr = mmap(NULL, page_offset + length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, page_base)) == MAP_FAILED){
         error = errno; 
-        printf("MMAP ERROR = %d\n", error); 
+        OS_printf("MMAP ERROR = %d\n", error); 
 		sysaddr = NULL; 
     }
 	close(fd); 
@@ -65,14 +65,14 @@ void Xil_MMAP_close(__off_t shared_addr, __off_t address, size_t length, int rea
     if(!read){
         if(msync((void *)(shared_addr - page_offset),  page_offset + length, MS_ASYNC) != 0){
             error = errno; 
-            printf("MSYNC ERROR = %d\n", error); 
+            OS_printf("MSYNC ERROR = %d\n", error); 
         }
         usleep(10000); 
     }
 
     if(munmap((void *)(shared_addr - page_offset), page_offset + length)){
         error = errno; 
-        printf("MUNMAP ERROR = %d\n", error); 
+        OS_printf("MUNMAP ERROR = %d\n", error); 
     }
 }
 

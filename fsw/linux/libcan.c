@@ -29,12 +29,12 @@ int32_t can_init_dev(can_info_t* device)
   retVal = can_set_bitrate(device->handle, device->bitrate);
   if (retVal < 0) 
   {
-    printf("Errno: %d \n", errno);
-    printf("\n");
-    printf("Try the following before running again: \n");
-    printf("  modprobe -r xilinx_can \n");
-    printf("  modprobe xilinx_can \n");
-    printf("\n");
+    OS_printf("Errno: %d \n", errno);
+    OS_printf("\n");
+    OS_printf("Try the following before running again: \n");
+    OS_printf("  modprobe -r xilinx_can \n");
+    OS_printf("  modprobe xilinx_can \n");
+    OS_printf("\n");
     return CAN_SET_BITRATE_ERR;
   }
 
@@ -177,7 +177,7 @@ int32_t can_read(can_info_t* device)
   }
 
   #ifdef LIBCAN_VERBOSE
-    printf("can_read ret = %d \n", ret);
+    OS_printf("can_read ret = %d \n", ret);
   #endif
 
   return ret;
@@ -221,19 +221,19 @@ int32_t can_master_transaction(can_info_t* device)
   }
 
   #ifdef LIBCAN_VERBOSE
-    printf("can_master_transaction: \n");
-    printf("  can_id = 0x%08x \t tx: 0x", device->tx_frame.can_id);
+    OS_printf("can_master_transaction: \n");
+    OS_printf("  can_id = 0x%08x \t tx: 0x", device->tx_frame.can_id);
     for (i = 0; i < device->tx_frame.can_dlc; i++)
     {
-      printf("%02x ", device->tx_frame.data[i]);
+      OS_printf("%02x ", device->tx_frame.data[i]);
     }
-    printf("\n");
-    printf("  can_id = 0x%08x \t rx: 0x", device->rx_frame.can_id);
+    OS_printf("\n");
+    OS_printf("  can_id = 0x%08x \t rx: 0x", device->rx_frame.can_id);
     for (i = 0; i < device->rx_frame.can_dlc; i++)
     {
-      printf("%02x ", device->rx_frame.data[i]);
+      OS_printf("%02x ", device->rx_frame.data[i]);
     }
-    printf("\n");
+    OS_printf("\n");
   #endif
 
   return status;

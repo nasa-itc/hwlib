@@ -32,7 +32,7 @@ ivv-itc@lists.nasa.gov
 #include "libuart.h"
 
 /* size of uart buffer */
-#define USART_RX_BUF_SIZE    512
+#define USART_RX_BUF_SIZE    4096
 
 /* usart device handles */
 static NE_Uart *usart_device[NUM_USARTS] = {0};
@@ -77,12 +77,11 @@ void nos_destroy_usart_link(void)
 }
 
 /* init usart */
-int32 uart_init_port(uart_info_t* device)
+int32_t uart_init_port(uart_info_t* device)
 {
     int32_t status = OS_SUCCESS;
     if(device->handle >= 0)
     {
-        OS_MutSemTake(nos_usart_mutex);
 
         /* get usart device handle */
         NE_Uart **dev = &usart_device[device->handle];
@@ -108,7 +107,6 @@ int32 uart_init_port(uart_info_t* device)
 		        status = OS_ERR_FILE;
             }
         }
-        OS_MutSemGive(nos_usart_mutex);
     }
     else
     {
@@ -130,22 +128,31 @@ static NE_Uart* nos_get_usart_device(int handle)
     return dev;
 }
 
+/* usart flush */
+int32_t uart_flush(int32_t handle)
+{
+    NE_Uart *dev = nos_get_usart_device((int)handle);
+    if(dev)
+    {
+        NE_uart_flush(dev);
+    }
+    return UART_SUCCESS;
+}
+
 /* usart write */
-int32 uart_write_port(int32 handle, uint8 data[], const uint32 numBytes)
+int32_t uart_write_port(int32_t handle, uint8 data[], const uint32 numBytes)
 {
     int32_t status = OS_ERR_FILE;
     NE_Uart *dev = nos_get_usart_device((int)handle);
     if(dev)
     {
-        OS_MutSemTake(nos_usart_mutex);
         status = NE_uart_write(dev, (const uint8_t*)data, numBytes); //Can this function return -1?
-        OS_MutSemGive(nos_usart_mutex);
     }
     return status;
 }
 
 /* usart read */
-int32 uart_read_port(int32 handle, uint8 data[], const uint32 numBytes)
+int32_t uart_read_port(int32_t handle, uint8 data[], const uint32 numBytes)
 {
     uint32 status = OS_ERR_FILE;
 
@@ -157,7 +164,6 @@ int32 uart_read_port(int32 handle, uint8 data[], const uint32 numBytes)
         NE_Uart *dev = nos_get_usart_device((int)handle);
         if(dev)
         {
-            OS_MutSemTake(nos_usart_mutex);
             for (i = 0; i < (int)numBytes; i++) //TODO: Add ability to switch between blocking and non-blocking?
             {
                 /*
@@ -174,42 +180,45 @@ int32 uart_read_port(int32 handle, uint8 data[], const uint32 numBytes)
                 //BLOCKING MODE
                 do {
                     stat = NE_uart_getc(dev, (uint8_t*)&c);
+                    if (stat == 1)
+                    {
+                        OS_TaskDelay(1);
+                    }
                 } while(stat); 
                 data[i] = c;
             }
-            OS_MutSemGive(nos_usart_mutex);
             status = numBytes;
             
             return status;
         }
-
         return status; //There is data, but can't read from device
     }
-
     return status; //Following arm_inux model
 }
 
 /* usart number bytes available */
-int32 uart_bytes_available(int32 handle)
+int32_t uart_bytes_available(int32_t handle)
 {
     int bytes = 0;
     NE_Uart *dev = nos_get_usart_device((int)handle);
     if(dev)
     {
-        OS_MutSemTake(nos_usart_mutex);
         bytes = (int)NE_uart_available(dev);
-        OS_MutSemGive(nos_usart_mutex);
     }
     return bytes;
 }
 
-int32 uart_close_port(int32 handle) 
+int32_t uart_close_port(int32_t handle) 
 {
     NE_UartStatus status;
     NE_Uart *dev = nos_get_usart_device((int)handle);
     if (handle >= 0)
     {
-        status = NE_uart_close(&dev);
+        if(dev)
+        {
+            status = NE_uart_close(&dev);
+            usart_device[handle] = 0;
+        }
     }
     if (status == NE_UART_SUCCESS) {
         return OS_SUCCESS;

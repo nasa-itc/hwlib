@@ -18,12 +18,13 @@ ivv-itc@lists.nasa.gov
 #include "nos_link.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 /* psp */
-#include <cfe_psp.h>
+//#include <cfe_psp.h>
 
 /* osal */
-#include <osapi.h>
+//#include <osapi.h>
 
 /* nos */
 #include <Uart/Client/CInterface.h>
@@ -38,11 +39,15 @@ ivv-itc@lists.nasa.gov
 static NE_Uart *usart_device[NUM_USARTS] = {0};
 
 /* usart mutex */
-static uint32 nos_usart_mutex = 0;
+static pthread_mutex_t nos_usart_mutex;
 
 /* public prototypes */
 void nos_init_usart_link(void);
 void nos_destroy_usart_link(void);
+int32_t sim_MutSemCreate (pthread_mutex_t *mutex, uint32_t options);
+int32_t sim_MutSemDelete (pthread_mutex_t *mutex);
+int32_t sim_MutSemGive (pthread_mutex_t *mutex);
+int32_t sim_MutSemTake (pthread_mutex_t *mutex);
 
 /* private prototypes */
 static NE_Uart* nos_get_usart_device(int handle);
@@ -51,7 +56,7 @@ static NE_Uart* nos_get_usart_device(int handle);
 void nos_init_usart_link(void)
 {
     /* create mutex */
-    int32 result = OS_MutSemCreate(&nos_usart_mutex, "nos_usart", 0);
+    int32_t result = sim_MutSemCreate(&nos_usart_mutex, 0);
 
 }
 
@@ -60,7 +65,7 @@ void nos_destroy_usart_link(void)
 {
     int i;
 
-    OS_MutSemTake(nos_usart_mutex);
+    sim_MutSemTake(&nos_usart_mutex);
 
     /* clean up usart buses */
     
@@ -70,10 +75,10 @@ void nos_destroy_usart_link(void)
         if(dev) NE_uart_close(&dev);
     }
     
-    OS_MutSemGive(nos_usart_mutex);
+    sim_MutSemGive(&nos_usart_mutex);
 
     /* destroy mutex */
-    int32 result = OS_MutSemDelete(nos_usart_mutex);
+    int32_t result = sim_MutSemDelete(&nos_usart_mutex);
 }
 
 /* init usart */
@@ -140,7 +145,7 @@ int32_t uart_flush(int32_t handle)
 }
 
 /* usart write */
-int32_t uart_write_port(int32_t handle, uint8 data[], const uint32 numBytes)
+int32_t uart_write_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
 {
     int32_t status = OS_ERR_FILE;
     NE_Uart *dev = nos_get_usart_device((int)handle);
@@ -152,9 +157,9 @@ int32_t uart_write_port(int32_t handle, uint8 data[], const uint32 numBytes)
 }
 
 /* usart read */
-int32_t uart_read_port(int32_t handle, uint8 data[], const uint32 numBytes)
+int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
 {
-    uint32 status = OS_ERR_FILE;
+    uint32_t status = OS_ERR_FILE;
 
     if (data != NULL) //Check that there is actually data to read
     { 
@@ -229,3 +234,107 @@ int32_t uart_close_port(int32_t handle)
     }
     
 }
+
+int32_t sim_MutSemCreate (pthread_mutex_t *mutex, uint32_t options)
+{
+    int                 return_code;
+    pthread_mutexattr_t mutex_attr;
+
+    /*
+    ** initialize the attribute with default values
+    */
+    return_code = pthread_mutexattr_init(&mutex_attr);
+    if ( return_code != 0 )
+    {
+       OS_printf("Error: Mutex could not be created. pthread_mutexattr_init failed: %s\n",
+             strerror(return_code));
+       return OS_ERROR;
+    }
+
+    /*
+    ** Allow the mutex to use priority inheritance
+    */
+    return_code = pthread_mutexattr_setprotocol(&mutex_attr,PTHREAD_PRIO_INHERIT);
+    if ( return_code != 0 )
+    {
+       OS_printf("Error: Mutex could not be created. pthread_mutexattr_setprotocol failed: %s\n",
+             strerror(return_code));
+       return OS_ERROR;
+    }
+
+    /*
+    **  Set the mutex type to RECURSIVE so a thread can do nested locks
+    */
+    return_code = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_RECURSIVE);
+    if ( return_code != 0 )
+    {
+       OS_printf("Error: Mutex could not be created. pthread_mutexattr_settype failed: %s\n",
+             strerror(return_code));
+       return OS_ERROR;
+    }
+
+    /*
+    ** create the mutex
+    ** upon successful initialization, the state of the mutex becomes initialized and unlocked
+    */
+    return_code = pthread_mutex_init(mutex,&mutex_attr);
+    if ( return_code != 0 )
+    {
+       OS_printf("Error: Mutex could not be created: %s\n",
+             strerror(return_code));
+       return OS_ERROR;
+    }
+
+    return OS_SUCCESS;
+}
+
+
+int32_t sim_MutSemDelete (pthread_mutex_t *mutex)
+{
+    int status;
+
+    status = pthread_mutex_destroy(mutex); /* 0 = success */
+
+    if (status != 0)
+    {
+        return OS_ERROR;
+    }
+
+    return OS_SUCCESS;
+
+}
+
+
+int32_t sim_MutSemGive (pthread_mutex_t *mutex)
+{
+   int status;
+
+   /*
+    ** Unlock the mutex
+    */
+   status = pthread_mutex_unlock(mutex);
+   if(status != 0)
+   {
+      return OS_ERROR;
+   }
+
+   return OS_SUCCESS;
+}
+
+
+int32_t sim_MutSemTake (pthread_mutex_t *mutex)
+{
+    int status;
+
+    /*
+    ** Lock the mutex
+    */
+    status = pthread_mutex_lock(mutex);
+    if( status != 0 )
+    {
+        return OS_ERROR;
+    }
+
+    return OS_SUCCESS;
+}
+

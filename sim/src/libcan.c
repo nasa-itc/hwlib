@@ -19,12 +19,6 @@ ivv-itc@lists.nasa.gov
 #include <stdint.h>
 #include <stdlib.h>
 
-/* psp */
-#include <cfe_psp.h>
-
-/* osal */
-#include <osapi.h>
-
 /* nos */
 #include <Can/Client/CInterface.h>
 
@@ -34,9 +28,6 @@ ivv-itc@lists.nasa.gov
 
 /* can device handles */
 static NE_CanHandle *can_device[NUM_CAN_DEVICES] = {0};
-
-/* can mutex */
-static uint32 nos_can_mutex = 0;
 
 /* public prototypes */
 void nos_init_can_link(void);
@@ -71,16 +62,11 @@ static NE_CanHandle* nos_get_can_device(can_info_t* device)
 /* initialize nos engine can link */
 void nos_init_can_link(void)
 {
-    /* create mutex */
-    int32 result = OS_MutSemCreate(&nos_can_mutex, "nos_can", 0);
-
 }
 
 /* destroy nos engine can link */
 void nos_destroy_can_link(void)
 {
-    OS_MutSemTake(nos_can_mutex);
-
     /* clean up can buses */
     int i;
     for (i = 0; i < NUM_CAN_DEVICES; i++)
@@ -89,17 +75,12 @@ void nos_destroy_can_link(void)
         if (dev) 
             NE_can_close(&dev);
     }
-    
-    OS_MutSemGive(nos_can_mutex);
-
-    /* destroy mutex */
-    int32 result = OS_MutSemDelete(nos_can_mutex);
 }
 
 // Bring CAN network interface
 int32_t can_init_dev(can_info_t* device)
 {
-    int32 result = OS_SUCCESS;
+    int32_t result = OS_SUCCESS;
     NE_CanHandle **dev;
     const nos_connection_t *con;
 
@@ -132,7 +113,6 @@ int32_t can_init_dev(can_info_t* device)
         OS_printf("LIBCAN: %s:  FAILED TO INITIALIZE NOS CAN MASTER\n", __FUNCTION__);
     }
 
-    OS_MutSemGive(nos_can_mutex);
     return result;        
 }
 
@@ -163,7 +143,6 @@ int32_t can_master_transaction(can_info_t* device)
     NE_CanHandle *dev = nos_get_can_device(device);
 
     /* can transaction */
-    OS_MutSemTake(nos_can_mutex);
     if(dev)
     {
         if ( (device->tx_frame.can_id & 0xFF) == CW_WHL1_MASK || (device->tx_frame.can_id & 0xFF) == CW_WHL2_MASK || (device->tx_frame.can_id & 0xFF) == CW_WHL3_MASK )
@@ -185,7 +164,6 @@ int32_t can_master_transaction(can_info_t* device)
                                        (uint8_t*) &device->rx_frame, CW_CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
         }
     }
-    OS_MutSemGive(nos_can_mutex);
 
     #ifdef LIBCAN_VERBOSE
         OS_printf("can_master_transaction: \n");
@@ -209,14 +187,10 @@ int32_t can_master_transaction(can_info_t* device)
 // Bring CAN network interface down
 int32_t can_close_device(can_info_t* device)
 {
-    OS_MutSemTake(nos_can_mutex);
-
     /* clean up can device */
     NE_CanHandle *dev = can_device[CW_CAN_HANDLE];
     if(dev) NE_can_close(&dev);
     
-    OS_MutSemGive(nos_can_mutex);
-
     /* destroy mutex */
     return NE_CAN_SUCCESS;
 }

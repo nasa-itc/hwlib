@@ -19,18 +19,11 @@ ivv-itc@lists.nasa.gov
 #include <stdint.h>
 #include <stdlib.h>
 
-/* psp */
-#include <cfe_psp.h>
-
 /* nos */
 #include <Spi/Client/CInterface.h>
 
 /* hwlib API */
 #include "libspi.h"
-
-/* spi bus mutex */
-spi_mutex_t spi_bus_mutex[MAX_SPI_BUSES];
-uint32_t handle_count = 0;
 
 /* spi device handles */
 static NE_SpiHandle *spi_device[NUM_SPI_DEVICES] = {0};
@@ -61,56 +54,30 @@ void nos_destroy_spi_link(void)
 }
 
 /* nos spi init */
-int32 spi_init_dev(spi_info_t* device)
+int32_t spi_init_dev(spi_info_t* device)
 {
     int     status = SPI_SUCCESS;
     char    buffer[16];
 
-    // Initialize the bus mutex
-    if (device->bus < MAX_SPI_BUSES)
+    /* get spi device handle */
+    NE_SpiHandle **dev = &spi_device[device->handle];
+    if(*dev == NULL)
     {
-        if (spi_bus_mutex[device->bus].users == 0)
+        /* get nos spi connection params */
+        const nos_connection_t *con = &nos_spi_connection[(device->bus * 10) + device->cs];
+
+        /* try to initialize master */
+        *dev = NE_spi_init_master3(hub, con->uri, con->bus);
+        if(*dev)
         {
-            snprintf(buffer, 16, "spi_%d_mutex", device->bus);
-            status = OS_MutSemCreate(&spi_bus_mutex[device->bus].spi_mutex, buffer, 0);
-            if (status != OS_SUCCESS)
-            {
-                OS_printf("HWLIB: Create spi mutex error %d", status);
-                return status;
-            }
+            status = SPI_SUCCESS;
         }
-        spi_bus_mutex[device->bus].users++;
-    }
-    else
-    {
-        OS_printf("HWLIB: Create spi mutex error %d, bus invalid!", status);
-        return status;
-    }
-
-    if (OS_MutSemTake(spi_bus_mutex[device->bus].spi_mutex) == OS_SUCCESS)
-    {
-        /* get spi device handle */
-        NE_SpiHandle **dev = &spi_device[device->handle];
-        if(*dev == NULL)
+        else
         {
-            /* get nos spi connection params */
-            const nos_connection_t *con = &nos_spi_connection[(device->bus * 10) + device->cs];
-
-            /* try to initialize master */
-            *dev = NE_spi_init_master3(hub, con->uri, con->bus);
-            if(*dev)
-            {
-                status = SPI_SUCCESS;
-            }
-            else
-            {
-                OS_MutSemGive(spi_bus_mutex[device->bus].spi_mutex);
-                OS_printf("HWLIB: Open SPI device \"%s\" error %d", device->deviceString, status);
-                return status;
-            }
+            OS_printf("HWLIB: Open SPI device \"%s\" error %d", device->deviceString, status);
+            return status;
         }
     }
-    OS_MutSemGive(spi_bus_mutex[device->bus].spi_mutex);
 
     // Set open flag
     device->isOpen = SPI_DEVICE_OPEN;
@@ -135,11 +102,9 @@ static NE_SpiHandle* nos_get_spi_device(spi_info_t* device)
 }
 
 /* nos spi chip select */
-int32 spi_select_chip(spi_info_t* device)
+int32_t spi_select_chip(spi_info_t* device)
 {
     uint32_t status = SPI_SUCCESS;
-
-    status = OS_MutSemTake(spi_bus_mutex[device->bus].spi_mutex);
 
     NE_SpiHandle *dev = nos_get_spi_device(device);
     if(dev)
@@ -151,11 +116,9 @@ int32 spi_select_chip(spi_info_t* device)
 }
 
 /* nos spi chip unselect */
-int32 spi_unselect_chip(spi_info_t* device)
+int32_t spi_unselect_chip(spi_info_t* device)
 {
     uint32_t status = SPI_SUCCESS;
-
-    status = OS_MutSemGive(spi_bus_mutex[device->bus].spi_mutex);
 
     NE_SpiHandle *dev = nos_get_spi_device(device);
     if(dev)
@@ -167,7 +130,7 @@ int32 spi_unselect_chip(spi_info_t* device)
 }
 
 /* nos spi write */
-int32 spi_write(spi_info_t* device, uint8 data[], const uint32 numBytes)
+int32_t spi_write(spi_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
     int status = SPI_SUCCESS;
 
@@ -184,7 +147,7 @@ int32 spi_write(spi_info_t* device, uint8 data[], const uint32 numBytes)
 }
 
 /* nos spi read */
-int32 spi_read(spi_info_t* device, uint8 data[], const uint32 numBytes)
+int32_t spi_read(spi_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
     int status = SPI_SUCCESS;
 
@@ -200,7 +163,7 @@ int32 spi_read(spi_info_t* device, uint8 data[], const uint32 numBytes)
     return status;
 }
 
-int32 spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer, uint32_t length, uint16_t delay, uint8_t bits, uint8_t deselect)
+int32_t spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer, uint32_t length, uint16_t delay, uint8_t bits, uint8_t deselect)
 {
     int status = SPI_SUCCESS;
 
@@ -216,7 +179,7 @@ int32 spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer, u
     return status;
 }
 
-int32 spi_close_device(spi_info_t* device)
+int32_t spi_close_device(spi_info_t* device)
 {
 	int status = SPI_SUCCESS;
 

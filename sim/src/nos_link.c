@@ -16,10 +16,8 @@ ivv-itc@lists.nasa.gov
 */
 
 #include "nos_link.h"
+#include "hwlib.h"
 #include <stdlib.h>
-
-/* osal */
-#include <osapi.h>
 
 /* nos usart connection table */
 nos_connection_t nos_usart_connection[NUM_USARTS] = {

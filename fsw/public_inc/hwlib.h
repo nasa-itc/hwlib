@@ -40,7 +40,11 @@ ivv-itc@lists.nasa.gov
 #ifndef OS_SUCCESS
     #define OS_printf           printf
     #define OS_TaskDelay(n)     ( usleep((n) * 1000) )
-    #define OS_PACK
+    #if defined (__GNUC__)
+      #define OS_PACK         __attribute__ ((packed))
+    #else
+      #define OS_PACK
+    #endif
     #define OS_SUCCESS          0
     #define OS_ERROR           -1
     #define OS_ERR_FILE        -2

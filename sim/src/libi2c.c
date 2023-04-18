@@ -28,10 +28,6 @@ ivv-itc@lists.nasa.gov
 /* i2c device handles */
 static NE_I2CHandle *i2c_device[NUM_I2C_DEVICES] = {0};
 
-/* public prototypes */
-void nos_init_i2c_link(void);
-void nos_destroy_i2c_link(void);
-
 /* initialize nos engine i2c link */
 void nos_init_i2c_link(void)
 {

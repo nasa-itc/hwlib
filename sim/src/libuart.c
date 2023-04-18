@@ -31,17 +31,6 @@ ivv-itc@lists.nasa.gov
 /* usart device handles */
 static NE_Uart *usart_device[NUM_USARTS] = {0};
 
-/* public prototypes */
-void nos_init_usart_link(void);
-void nos_destroy_usart_link(void);
-int32_t sim_MutSemCreate (pthread_mutex_t *mutex, uint32_t options);
-int32_t sim_MutSemDelete (pthread_mutex_t *mutex);
-int32_t sim_MutSemGive (pthread_mutex_t *mutex);
-int32_t sim_MutSemTake (pthread_mutex_t *mutex);
-
-/* private prototypes */
-static NE_Uart* nos_get_usart_device(int handle);
-
 /* initialize nos engine usart link */
 void nos_init_usart_link(void)
 {

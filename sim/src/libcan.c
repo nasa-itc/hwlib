@@ -29,10 +29,6 @@ ivv-itc@lists.nasa.gov
 /* can device handles */
 static NE_CanHandle *can_device[NUM_CAN_DEVICES] = {0};
 
-/* public prototypes */
-void nos_init_can_link(void);
-void nos_destroy_can_link(void);
-
 /* get spi device */
 static NE_CanHandle* nos_get_can_device(can_info_t* device)
 {

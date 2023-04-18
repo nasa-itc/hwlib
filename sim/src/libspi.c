@@ -28,13 +28,6 @@ ivv-itc@lists.nasa.gov
 /* spi device handles */
 static NE_SpiHandle *spi_device[NUM_SPI_DEVICES] = {0};
 
-/* public prototypes */
-void nos_init_spi_link(void);
-void nos_destroy_spi_link(void);
-
-/* private prototypes */
-static NE_SpiHandle* nos_get_spi_device(spi_info_t* device);
-
 /* initialize nos engine spi link */
 void nos_init_spi_link(void)
 {

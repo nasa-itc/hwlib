@@ -12,7 +12,7 @@ include_directories(fsw/mission_inc
                     fsw/public_inc)
 
 # include directories for flight configuration
-IF(CFE_SYSTEM_PSPNAME STREQUAL "linux")
+IF(CFE_SYSTEM_PSPNAME STREQUAL "pc-linux")
     message(STATUS "hwlib: linux configuration")
     aux_source_directory(fsw/linux APP_SRC_FILES)
 ELSE()
@@ -27,6 +27,6 @@ add_cfe_app(hwlib ${APP_SRC_FILES})
 IF(CFE_SYSTEM_PSPNAME STREQUAL NOS_PSPNAME)
     add_subdirectory(sim)
     target_link_libraries(hwlib noslink)
-ELSEIF(CFE_SYSTEM_PSPNAME STREQUAL "linux")
+ELSEIF(CFE_SYSTEM_PSPNAME STREQUAL "pc-linux")
 	target_link_libraries(hwlib socketcan)
 ENDIF()

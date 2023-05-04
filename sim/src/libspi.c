@@ -18,6 +18,7 @@ ivv-itc@lists.nasa.gov
 #include "nos_link.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 /* nos */
 #include <Spi/Client/CInterface.h>
@@ -25,13 +26,32 @@ ivv-itc@lists.nasa.gov
 /* hwlib API */
 #include "libspi.h"
 
+/* spi bus mutex */
+pthread_mutex_t spi_bus_mutex[MAX_SPI_BUSES];
+uint32_t handle_count = 0;
+
 /* spi device handles */
 static NE_SpiHandle *spi_device[NUM_SPI_DEVICES] = {0};
+
+/* public prototypes */
+void nos_init_spi_link(void);
+void nos_destroy_spi_link(void);
+
+/* private prototypes */
+static NE_SpiHandle* nos_get_spi_device(spi_info_t* device);
 
 /* initialize nos engine spi link */
 void nos_init_spi_link(void)
 {
-    // Do nothing
+    // Init the mutexes for chip select
+    int i;
+    for(i = 0; i < NUM_SPI_DEVICES; i++)
+    {
+        if (pthread_mutex_init(&spi_bus_mutex[i], NULL) != 0)
+        {
+            OS_printf("HWLIB: Create spi mutex error for spi bus %d", i);
+        }
+    }
 }
 
 /* destroy nos engine spi link */
@@ -43,6 +63,11 @@ void nos_destroy_spi_link(void)
     {
         NE_SpiHandle *dev = spi_device[i];
         if(dev) NE_spi_close(&dev);
+
+        if (pthread_mutex_destroy(&spi_bus_mutex[i]) != 0)
+        {
+            OS_printf("HWLIB: Destroy spi mutex error for spi bus %d", i);
+        }
     }
 }
 
@@ -52,6 +77,9 @@ int32_t spi_init_dev(spi_info_t* device)
     int     status = SPI_SUCCESS;
     char    buffer[16];
 
+
+    pthread_mutex_lock(&spi_bus_mutex[device->bus]);
+    
     /* get spi device handle */
     NE_SpiHandle **dev = &spi_device[device->handle];
     if(*dev == NULL)
@@ -67,10 +95,13 @@ int32_t spi_init_dev(spi_info_t* device)
         }
         else
         {
+            pthread_mutex_unlock(&spi_bus_mutex[device->bus]);
             OS_printf("HWLIB: Open SPI device \"%s\" error %d", device->deviceString, status);
             return status;
         }
     }
+
+    pthread_mutex_unlock(&spi_bus_mutex[device->bus]);
 
     // Set open flag
     device->isOpen = SPI_DEVICE_OPEN;
@@ -97,7 +128,9 @@ static NE_SpiHandle* nos_get_spi_device(spi_info_t* device)
 /* nos spi chip select */
 int32_t spi_select_chip(spi_info_t* device)
 {
-    uint32_t status = SPI_SUCCESS;
+    int32_t status = SPI_SUCCESS;
+
+    pthread_mutex_lock(&spi_bus_mutex[device->bus]);
 
     NE_SpiHandle *dev = nos_get_spi_device(device);
     if(dev)
@@ -111,7 +144,9 @@ int32_t spi_select_chip(spi_info_t* device)
 /* nos spi chip unselect */
 int32_t spi_unselect_chip(spi_info_t* device)
 {
-    uint32_t status = SPI_SUCCESS;
+    int32_t status = SPI_SUCCESS;
+
+    pthread_mutex_unlock(&spi_bus_mutex[device->bus]);
 
     NE_SpiHandle *dev = nos_get_spi_device(device);
     if(dev)

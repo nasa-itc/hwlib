@@ -31,17 +31,18 @@ ivv-itc@lists.nasa.gov
 /* usart device handles */
 static NE_Uart *usart_device[NUM_USARTS] = {0};
 
-/* initialize nos engine usart link */
-void nos_init_usart_link(void)
-{
-}
+/* public prototypes */
+void nos_destroy_usart_link(void);
+
+/* private prototypes */
+static NE_Uart* nos_get_usart_device(int handle);
 
 /* destroy nos engine usart link */
 void nos_destroy_usart_link(void)
 {
     int i;
 
-    /* clean up usart buses */    
+    /* clean up usart buses */
     for(i = 0; i <= NUM_USARTS; i++)
     {
         NE_Uart *dev = usart_device[i];

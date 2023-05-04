@@ -55,11 +55,6 @@ static NE_CanHandle* nos_get_can_device(can_info_t* device)
     return dev;
 }
 
-/* initialize nos engine can link */
-void nos_init_can_link(void)
-{
-}
-
 /* destroy nos engine can link */
 void nos_destroy_can_link(void)
 {
@@ -108,7 +103,6 @@ int32_t can_init_dev(can_info_t* device)
         result = OS_ERROR;
         OS_printf("LIBCAN: %s:  FAILED TO INITIALIZE NOS CAN MASTER\n", __FUNCTION__);
     }
-
     return result;        
 }
 
@@ -186,7 +180,6 @@ int32_t can_close_device(can_info_t* device)
     /* clean up can device */
     NE_CanHandle *dev = can_device[CW_CAN_HANDLE];
     if(dev) NE_can_close(&dev);
-    
-    /* destroy mutex */
+
     return NE_CAN_SUCCESS;
 }

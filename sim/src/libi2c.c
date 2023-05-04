@@ -28,11 +28,6 @@ ivv-itc@lists.nasa.gov
 /* i2c device handles */
 static NE_I2CHandle *i2c_device[NUM_I2C_DEVICES] = {0};
 
-/* initialize nos engine i2c link */
-void nos_init_i2c_link(void)
-{
-}
-
 /* destroy nos engine i2c link */
 void nos_destroy_i2c_link(void)
 {
@@ -43,6 +38,7 @@ void nos_destroy_i2c_link(void)
         NE_I2CHandle *dev = i2c_device[i];
         if(dev) NE_i2c_close(&dev);
     }
+
 }
 
 int32_t i2c_master_init(i2c_bus_info_t* device)

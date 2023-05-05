@@ -19,12 +19,6 @@ ivv-itc@lists.nasa.gov
 #include <stdint.h>
 #include <stdlib.h>
 
-/* psp */
-#include <cfe_psp.h>
-
-/* osal */
-#include <osapi.h>
-
 /* nos */
 #include <I2C/Client/CInterface.h>
 
@@ -34,26 +28,9 @@ ivv-itc@lists.nasa.gov
 /* i2c device handles */
 static NE_I2CHandle *i2c_device[NUM_I2C_DEVICES] = {0};
 
-/* i2c mutex */
-static uint32 nos_i2c_mutex = 0;
-
-/* public prototypes */
-void nos_init_i2c_link(void);
-void nos_destroy_i2c_link(void);
-
-/* initialize nos engine i2c link */
-void nos_init_i2c_link(void)
-{
-    /* create mutex */
-    int32 result = OS_MutSemCreate(&nos_i2c_mutex, "nos_i2c", 0);
-
-}
-
 /* destroy nos engine i2c link */
 void nos_destroy_i2c_link(void)
 {
-    OS_MutSemTake(nos_i2c_mutex);
-
     /* clean up i2c buses */
     int32_t i;
     for(i = 0; i < NUM_I2C_DEVICES; i++)
@@ -61,11 +38,7 @@ void nos_destroy_i2c_link(void)
         NE_I2CHandle *dev = i2c_device[i];
         if(dev) NE_i2c_close(&dev);
     }
-    
-    OS_MutSemGive(nos_i2c_mutex);
 
-    /* destroy mutex */
-    int32 result = OS_MutSemDelete(nos_i2c_mutex);
 }
 
 int32_t i2c_master_init(i2c_bus_info_t* device)
@@ -82,8 +55,6 @@ int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8
 
     if(handle < NUM_I2C_DEVICES)
     {
-        OS_MutSemTake(nos_i2c_mutex);
-
         /* get i2c device handle */
         NE_I2CHandle **dev = &i2c_device[handle];
         if(*dev == NULL)
@@ -109,8 +80,6 @@ int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8
                 result = OS_SUCCESS;
             }
         }
-
-        OS_MutSemGive(nos_i2c_mutex);
     }
 
     return result;

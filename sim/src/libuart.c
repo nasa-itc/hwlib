@@ -19,12 +19,6 @@ ivv-itc@lists.nasa.gov
 #include <stdint.h>
 #include <stdlib.h>
 
-/* psp */
-#include <cfe_psp.h>
-
-/* osal */
-#include <osapi.h>
-
 /* nos */
 #include <Uart/Client/CInterface.h>
 
@@ -37,43 +31,23 @@ ivv-itc@lists.nasa.gov
 /* usart device handles */
 static NE_Uart *usart_device[NUM_USARTS] = {0};
 
-/* usart mutex */
-static uint32 nos_usart_mutex = 0;
-
 /* public prototypes */
-void nos_init_usart_link(void);
 void nos_destroy_usart_link(void);
 
 /* private prototypes */
 static NE_Uart* nos_get_usart_device(int handle);
-
-/* initialize nos engine usart link */
-void nos_init_usart_link(void)
-{
-    /* create mutex */
-    int32 result = OS_MutSemCreate(&nos_usart_mutex, "nos_usart", 0);
-
-}
 
 /* destroy nos engine usart link */
 void nos_destroy_usart_link(void)
 {
     int i;
 
-    OS_MutSemTake(nos_usart_mutex);
-
     /* clean up usart buses */
-    
     for(i = 0; i <= NUM_USARTS; i++)
     {
         NE_Uart *dev = usart_device[i];
         if(dev) NE_uart_close(&dev);
     }
-    
-    OS_MutSemGive(nos_usart_mutex);
-
-    /* destroy mutex */
-    int32 result = OS_MutSemDelete(nos_usart_mutex);
 }
 
 /* init usart */
@@ -140,7 +114,7 @@ int32_t uart_flush(int32_t handle)
 }
 
 /* usart write */
-int32_t uart_write_port(int32_t handle, uint8 data[], const uint32 numBytes)
+int32_t uart_write_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
 {
     int32_t status = OS_ERR_FILE;
     NE_Uart *dev = nos_get_usart_device((int)handle);
@@ -152,9 +126,9 @@ int32_t uart_write_port(int32_t handle, uint8 data[], const uint32 numBytes)
 }
 
 /* usart read */
-int32_t uart_read_port(int32_t handle, uint8 data[], const uint32 numBytes)
+int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
 {
-    uint32 status = OS_ERR_FILE;
+    uint32_t status = OS_ERR_FILE;
 
     if (data != NULL) //Check that there is actually data to read
     { 

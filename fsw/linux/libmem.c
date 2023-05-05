@@ -92,7 +92,7 @@ void Xil_MMAP_Out32(unsigned int Addr, unsigned int Value){
 	
     *LocalAddr = Value; 
 
-    Xil_MMAP_close((unsigned int)LocalAddr, Addr, 4, 0); 
+    Xil_MMAP_close((unsigned long int)LocalAddr, Addr, 4, 0); 
 }
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -112,7 +112,7 @@ unsigned int Xil_MMAP_In32(unsigned int Addr){
 
     res = *LocalAddr; 
 
-    Xil_MMAP_close((unsigned int)LocalAddr, Addr, 4, 1); 
+    Xil_MMAP_close((unsigned long int)LocalAddr, Addr, 4, 1); 
     return res; 
 }
 
@@ -137,7 +137,7 @@ int32_t devmem_write(uint32_t addr, uint8_t *in, int32_t length){
     for(byte = 0; byte < length; byte++)
         LocalAddr[byte] = in[byte]; 
 
-    Xil_MMAP_close((unsigned int)LocalAddr, addr, length, 0); 
+    Xil_MMAP_close((unsigned long int)LocalAddr, addr, length, 0); 
 
     return length; 
 }
@@ -164,7 +164,7 @@ int32_t devmem_read(uint32_t addr, uint8_t *out, int32_t length){
     for(byte = 0; byte < length; byte++)
         out[byte] = LocalAddr[byte]; 
 
-    Xil_MMAP_close((unsigned int)LocalAddr, addr, length, 1); 
+    Xil_MMAP_close((unsigned long int)LocalAddr, addr, length, 1); 
 
     return length; 
 }

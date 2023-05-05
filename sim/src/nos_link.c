@@ -16,10 +16,8 @@ ivv-itc@lists.nasa.gov
 */
 
 #include "nos_link.h"
+#include "hwlib.h"
 #include <stdlib.h>
-
-/* osal */
-#include <osapi.h>
 
 /* nos usart connection table */
 nos_connection_t nos_usart_connection[NUM_USARTS] = {
@@ -161,7 +159,6 @@ nos_connection_t nos_spi_connection[NUM_SPI_DEVICES] = {
 NE_TransportHub *hub = NULL;
 
 /* internal hardware bus init/destroy */
-extern void nos_init_usart_link(void);
 extern void nos_destroy_usart_link(void);
 extern void nos_init_i2c_link(void);
 extern void nos_destroy_i2c_link(void);
@@ -179,9 +176,7 @@ void nos_init_link(void)
     hub = NE_create_transport_hub(0);
 
     /* initialize buses */
-    nos_init_usart_link();
-    nos_init_i2c_link();
-    nos_init_can_link();
+    /* can, i2c, and uart do not need init for mutex*/
     nos_init_spi_link();
 }
 

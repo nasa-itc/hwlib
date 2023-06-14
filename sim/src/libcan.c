@@ -24,7 +24,7 @@ ivv-itc@lists.nasa.gov
 
 #include "libcan.h"
 
-#define CW_CAN_BASE_CMD_LEN  8
+#define CAN_BASE_CMD_LEN  8
 
 /* can device handles */
 static NE_CanHandle *can_device[NUM_CAN_DEVICES] = {0};
@@ -33,23 +33,12 @@ static NE_CanHandle *can_device[NUM_CAN_DEVICES] = {0};
 static NE_CanHandle* nos_get_can_device(can_info_t* device)
 {
     NE_CanHandle *dev = NULL;
-    if(!strcmp(device->handle, CW_CAN_HANDLE_STR))
+    
+    dev = can_device[device->handle];
+    if(dev == NULL)
     {
-        dev = can_device[CW_CAN_HANDLE];
-        if(dev == NULL)
-        {
-            can_init_dev(device);
-            dev = can_device[CW_CAN_HANDLE];
-        }
-    }
-    else
-    {
-        dev = can_device[1];
-        if(dev == NULL)
-        {
-            can_init_dev(device);
-            dev = can_device[1];
-        }
+        can_init_dev(device);
+        dev = can_device[device->handle];
     }
     
     return dev;
@@ -75,25 +64,11 @@ int32_t can_init_dev(can_info_t* device)
     NE_CanHandle **dev;
     const nos_connection_t *con;
 
-    if(!strcmp(device->handle, CW_CAN_HANDLE_STR))
+    dev = &can_device[device->handle];
+    if (*dev == NULL)
     {
-
-        dev = &can_device[CW_CAN_HANDLE];
-        if (*dev == NULL)
-        {
-            /* get nos can connection params */
-            con = &nos_can_connection[CW_CAN_HANDLE];
-        }
-    }
-    else
-    {
-        // TODO - UPDATE with mission defined device strings
-        dev = &can_device[1];
-        if (*dev == NULL)
-        {
-            /* get nos can connection params */
-            con = &nos_can_connection[1];
-        }
+        /* get nos can connection params */
+        con = &nos_can_connection[device->handle];
     }
 
     /* try to initialize master */
@@ -135,24 +110,9 @@ int32_t can_master_transaction(can_info_t* device)
     /* can transaction */
     if(dev)
     {
-        if ( (device->tx_frame.can_id & 0xFF) == CW_WHL1_MASK || (device->tx_frame.can_id & 0xFF) == CW_WHL2_MASK || (device->tx_frame.can_id & 0xFF) == CW_WHL3_MASK )
-        {
-            result = NE_can_transaction(dev, CW_ADDRESS, 
-                                       (uint8_t*) &device->tx_frame, device->tx_frame.can_dlc + CW_CAN_BASE_CMD_LEN, 
-                                       (uint8_t*) &device->rx_frame, CW_CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
-        }            
-        else if (device->tx_frame.can_id == CW_ADDRESS)
-        {
-            result = NE_can_transaction(dev, CW_ADDRESS, 
-                                       (uint8_t*) &device->tx_frame, device->tx_frame.can_dlc + CW_CAN_BASE_CMD_LEN, 
-                                       (uint8_t*) &device->rx_frame, CW_CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
-        }
-        else 
-        {
-            result = NE_can_transaction(dev, device->tx_frame.can_id,
-                                       (uint8_t*) &device->tx_frame, device->tx_frame.can_dlc + CW_CAN_BASE_CMD_LEN, 
-                                       (uint8_t*) &device->rx_frame, CW_CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
-        }
+        result = NE_can_transaction(dev, device->tx_frame.can_id,
+                                    (uint8_t*) &device->tx_frame, device->tx_frame.can_dlc + CAN_BASE_CMD_LEN, 
+                                    (uint8_t*) &device->rx_frame, CAN_BASE_CMD_LEN + CAN_MAX_DLEN);
     }
 
     #ifdef LIBCAN_VERBOSE
@@ -178,7 +138,7 @@ int32_t can_master_transaction(can_info_t* device)
 int32_t can_close_device(can_info_t* device)
 {
     /* clean up can device */
-    NE_CanHandle *dev = can_device[CW_CAN_HANDLE];
+    NE_CanHandle *dev = can_device[device->handle];
     if(dev) NE_can_close(&dev);
 
     return NE_CAN_SUCCESS;

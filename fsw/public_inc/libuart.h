@@ -77,45 +77,45 @@ int32_t uart_init_port(uart_info_t* device);
 /*
  * Get the number of bytes waiting to be read for a given port
  * 
- * @param device number of the uart port
+ * @param device uart_info_t struct with all uart params
  * @return Returns number of bytes available
 */
-int32_t uart_bytes_available(int32_t handle);
+int32_t uart_bytes_available(uart_info_t* device);
 
 /*
  * Flushes data waiting to be read for a given port
  * 
- * @param device number of the uart port
+ * @param device uart_info_t struct with all uart params
  * @return Returns error code: UART_SUCCESS or specific UART_ERROR
 */
-int32_t uart_flush(int32_t handle);
+int32_t uart_flush(uart_info_t* device);
 
 /*
  * Read a number of bytes off of a given uart port
  * 
- * @param handle handle to the uart port when open
+ * @param device uart_info_t struct with all uart params
  * @param data array to store the read data
  * @param numBytes number of bytes to read off the port
  * @return Returns number of bytes successfully read
 */
-int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes);
+int32_t uart_read_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes);
 
 /*
  * Write a number of bytes to of a given uart port
  * 
- * @param deviceString string descriptor of the port
+ * @param device uart_info_t struct with all uart params
  * @param data array of the data to write
  * @param numBytes number of bytes to write to the port
  * @return Returns number of bytes successfully written
 */
-int32_t uart_write_port(int32_t handle, uint8_t data[], const uint32_t numBytes);
+int32_t uart_write_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes);
 
 /*
- * Generic uart initialization/ port close
+ * Generic uart port close
  * 
  * @param device uart_info_t struct with all uart params
  * @return Returns error code: UART_SUCCESS or specific UART_ERROR
 */
-int32_t uart_close_port(int32_t handle);
+int32_t uart_close_port(uart_info_t* device);
 
 #endif

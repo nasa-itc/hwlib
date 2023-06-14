@@ -77,59 +77,67 @@ typedef struct
 /* 
  * Initialize I2C handle as Master with bus speed
  *
- * @param Device Which I2C bus (if more than one exists)
+ * @param device Which I2C bus (if more than one exists)
  * @param speed Bus speed in kbps
- * @return Returns error code: OS_SUCCESS, or OS_ERROR
+ * @return Returns error code: I2C_SUCCESS, or I2C_ERROR
 */
 int32_t i2c_master_init(i2c_bus_info_t* device);
 
 /**
  * Execute an I2C master write and slave read in one transaction
  *
- * @param handle Handle to the device
+ * @param device Which I2C bus (if more than one exists)
  * @param addr I2C address, not bit-shifted
  * @param txbuf pointer to tx data
  * @param txlen length of tx data
  * @param rxbuf pointer to rx data
  * @param rxlen length of rx data
  * @param timeout Number of ticks to wait for a frame
- * @return Returns error code: OS_SUCCESS if a frame is received, or OS_ERROR if timed out or if handle is not a valid device
+ * @return Returns error code: I2C_SUCCESS if a frame is received, or I2C_ERROR if timed out or if handle is not a valid device
  */
-int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8_t txlen, void * rxbuf, uint8_t rxlen, uint16_t timeout);
+int32_t i2c_master_transaction(i2c_bus_info_t* device, uint8_t addr, void * txbuf, uint8_t txlen, void * rxbuf, uint8_t rxlen, uint16_t timeout);
 
 /**
  * Execute an I2C slave read
  *
- * @param handle Handle to the device
+ * @param device Which I2C bus (if more than one exists)
  * @param addr I2C address, not bit-shifted
  * @param rxbuf pointer to rx data
  * @param rxlen length of rx data
  * @param timeout Number of ticks to wait for a frame
- * @return Returns error code: OS_SUCCESS if a frame is received, or OS_ERROR if timed out or if handle is not a valid device
+ * @return Returns error code: I2C_SUCCESS if a frame is received, or I2C_ERROR if timed out or if handle is not a valid device
  */
-int32_t i2c_read_transaction(int32_t handle, uint8_t addr, void * rxbuf, uint8_t rxlen, uint8_t timeout);
+int32_t i2c_read_transaction(i2c_bus_info_t* device, uint8_t addr, void * rxbuf, uint8_t rxlen, uint8_t timeout);
 
 /**
  * Execute an I2C master write
  *
- * @param handle Handle to the device
+ * @param device Which I2C bus (if more than one exists)
  * @param addr I2C address, not bit-shifted
  * @param txbuf pointer to tx data
  * @param txlen length of tx data
  * @param timeout Number of ticks to wait for a frame
- * @return Returns error code: OS_SUCCESS if a frame is received, or OS_ERROR if timed out or if handle is not a valid device
+ * @return Returns error code: I2C_SUCCESS if a frame is received, or I2C_ERROR if timed out or if handle is not a valid device
  */
-int32_t i2c_write_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8_t txlen, uint8_t timeout);
+int32_t i2c_write_transaction(i2c_bus_info_t* device, uint8_t addr, void * txbuf, uint8_t txlen, uint8_t timeout);
 
 /**
  * Execute multiple I2C transactions without stops
  *
- * @param handle Handle to the device
+ * @param device Which I2C bus (if more than one exists)
  * @param addr I2C address, not bit-shifted
  * @param i2c_rdwr_ioctl_data structure containing multiple messages
  * @param timeout Number of ticks to wait for a frame
- * @return Returns error code: OS_SUCCESS if a frame is received, or OS_ERROR if timed out or if handle is not a valid device
+ * @return Returns error code: I2C_SUCCESS if a frame is received, or I2C_ERROR if timed out or if handle is not a valid device
  */
-int32_t i2c_multiple_transaction(int32_t handle, uint8_t addr, struct i2c_rdwr_ioctl_data* rdwr_data, uint16_t timeout);
+int32_t i2c_multiple_transaction(i2c_bus_info_t* device, uint8_t addr, struct i2c_rdwr_ioctl_data* rdwr_data, uint16_t timeout);
+
+/**
+ * Close an I2C bus
+ *
+ * @param device Which I2C bus (if more than one exists)
+ * @return Returns error code: I2C_SUCCESS if close was succes, or I2C_ERROR if close fails
+ */
+int32_t i2c_master_close(i2c_bus_info_t* device);
 
 #endif

@@ -209,9 +209,13 @@ int32_t spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer,
 
 int32_t spi_close_device(spi_info_t* device)
 {
-	int status = SPI_SUCCESS;
-
-	// TODO Implement this function!
-
-	return status;
+	if (device->handle >= 0)
+    {
+        NE_SpiHandle *dev = nos_get_spi_device(device);
+        if(dev)
+        {
+            NE_spi_close(&dev);
+        }
+    }
+    return OS_SUCCESS;
 }

@@ -78,24 +78,6 @@ ivv-itc@lists.nasa.gov
 #define CAN_SOCK_SETOPT_ERR     -12
 
 /*
-** Defines specific to the Cubewheel can IDs to function with the RW sims
-** These defines work around the multiple wheels talking to a single sim
-*/
-#define CW_CAN_HANDLE        0
-#ifdef __linux__
-    #define CW_CAN_HANDLE_STR    "can0"
-#else
-    #define CW_CAN_HANDLE_STR    "grcan0"
-#endif
-#define CW_SRC_MASK          0x10
-#define CW_ADDRESS           0x14
-#define CW_WHL1_MASK         0x33 // 51 - it assumed these are sequential values in the app
-#define CW_WHL2_MASK         0x34 // 52
-#define CW_WHL3_MASK         0x35 // 53
-
-// end cubewheel specific defines
-
-/*
  * Controller Area Network Identifier structure
  *
  * bit 0-28	: CAN identifier (11/29 bit)
@@ -108,7 +90,6 @@ typedef uint32_t canid_t;
 #ifdef __rtems__
 /**
  * struct can_frame - basic CAN frame structure
- * TODO: not tested with GRCAN
  */
 struct can_frame{
     uint32_t  can_id;  /* 32 bit CAN_ID*/
@@ -120,7 +101,7 @@ struct can_frame{
 /* CAN device info struct */
 typedef struct 
 {
-    const char* handle;   /* handle to the name of the network interface */
+    int32_t     handle;   /* handle to the network interface ex: 0 = "can0"*/
     uint8_t     isUp;     /* if the interface is up */
     /* Modes: each one can be on/off 
      * See section 6.5.1 of the socketcan kernel docs for reference 

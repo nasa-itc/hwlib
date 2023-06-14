@@ -141,6 +141,7 @@ int32_t i2c_master_close(i2c_bus_info_t* device)
         if(dev)
         {
             NE_i2c_close(&dev);
+            i2c_device[device->handle] = 0;
             device->isOpen = I2C_CLOSED;
         }
     }

@@ -191,6 +191,8 @@ int32_t uart_close_port(uart_info_t* device)
         if(dev)
         {
             status = NE_uart_close(&dev);
+            usart_device[device->handle] = 0;
+            device->isOpen = PORT_CLOSED;
         }
     }
     if (status == NE_UART_SUCCESS) {

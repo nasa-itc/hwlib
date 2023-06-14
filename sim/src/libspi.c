@@ -215,6 +215,8 @@ int32_t spi_close_device(spi_info_t* device)
         if(dev)
         {
             NE_spi_close(&dev);
+            spi_device[device->handle] = 0;
+            device-> isOpen = SPI_DEVICE_CLOSED;
         }
     }
     return OS_SUCCESS;

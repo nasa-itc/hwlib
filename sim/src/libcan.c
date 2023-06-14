@@ -73,10 +73,12 @@ int32_t can_init_dev(can_info_t* device)
 
     /* try to initialize master */
     *dev = NE_can_init_master3(hub, 10, con->uri, con->bus);
+    device->isUp = CAN_INTERFACE_UP;
     if (*dev == NULL)
     {
         result = OS_ERROR;
         OS_printf("LIBCAN: %s:  FAILED TO INITIALIZE NOS CAN MASTER\n", __FUNCTION__);
+        device->isUp = CAN_INTERFACE_DOWN;
     }
     return result;        
 }
@@ -139,7 +141,11 @@ int32_t can_close_device(can_info_t* device)
 {
     /* clean up can device */
     NE_CanHandle *dev = can_device[device->handle];
-    if(dev) NE_can_close(&dev);
-
+    if(dev) 
+    {
+        NE_can_close(&dev);
+        can_device[device->handle] = 0;
+        device->isUp = CAN_INTERFACE_DOWN;
+    }
     return NE_CAN_SUCCESS;
 }

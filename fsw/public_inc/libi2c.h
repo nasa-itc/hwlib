@@ -71,7 +71,7 @@ typedef struct
     int32_t  handle;   /* handle to the fd */
     int32_t  addr;     /* slave address */
     uint8_t  isOpen;   /* port status */
-    uint16_t speed;    
+    uint32_t speed;    
 } i2c_bus_info_t;
 
 /* 

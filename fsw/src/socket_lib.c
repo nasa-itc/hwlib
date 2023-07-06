@@ -18,7 +18,7 @@
 #include "libsocket.h"
 
 // ok... dummy usage... just so when the linker creates hwlib.so it does not throw out the libsocket.c.o object from libnoslink.a as not used
-void dummy3()
+void socket_dummy()
 {
     socket_info_t device;
     int32_t status = socket_create(&device);

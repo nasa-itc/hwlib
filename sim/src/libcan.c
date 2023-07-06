@@ -101,7 +101,7 @@ int32_t can_init_dev(can_info_t* device)
     if (*dev == NULL)
     {
         result = OS_ERROR;
-        OS_printf("LIBCAN: %s:  FAILED TO INITIALIZE NOS CAN MASTER\n", __FUNCTION__);
+        OS_printf("LIBCAN: %s:  FAILED TO INITIALIZE NOS CAN MASTER\n", __func__);
     }
     return result;        
 }

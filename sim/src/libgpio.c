@@ -60,7 +60,7 @@ int32_t gpio_init(gpio_info_t* device)
     //fd = open(buffer, O_WRONLY | O_CREAT);
     // Set open
     device->isOpen = GPIO_OPEN;
-    gpio_write(device, 0b0);
+    gpio_write(device, 0x00);
     return GPIO_SUCCESS;
 }
 
@@ -81,9 +81,9 @@ int32_t gpio_read(gpio_info_t* device, uint8_t* value)
     }
     close(fd);
     if (*value == '1') {
-        *value = 0b1;
+        *value = 0x01;
     } else {
-        *value = 0b0;
+        *value = 0x00;
     }
     return GPIO_SUCCESS;
 }

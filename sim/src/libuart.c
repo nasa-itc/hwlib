@@ -132,7 +132,7 @@ int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
 
     if (data != NULL) //Check that there is actually data to read
     { 
-        char c = 0xFF;
+        uint8_t c = 0xFF;
         int  i;
         int stat;
         NE_Uart *dev = nos_get_usart_device((int)handle);

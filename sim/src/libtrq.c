@@ -22,9 +22,6 @@ ivv-itc@lists.nasa.gov
 #include <arpa/inet.h> 
 #include <netinet/in.h>
 
-/* psp */
-#include <cfe_psp.h>
-
 /* nos */
 #include <Spi/Client/CInterface.h>
 
@@ -45,7 +42,7 @@ int32_t trq_update(trq_info_t* device)
     float percent_high_dir = 100.0 * device->timer_high_ns / device->timer_period_ns;
 
     // Take into account the direction
-    if (device->positive_direction == FALSE)
+    if (device->positive_direction == false)
     {
         percent_high_dir = percent_high_dir * -1;
     }
@@ -60,7 +57,7 @@ int32_t trq_update(trq_info_t* device)
         {
             if (num_send_errors++ < 10) 
             { // don't spam
-                OS_printf("NOS command_torquer:  Only sent %d bytes of %d bytes.  Message was:  %s\n", bytes_sent, strlen(message), message);
+                printf("NOS command_torquer:  Only sent %d bytes of %d bytes.  Message was:  %s\n", bytes_sent, strlen(message), message);
             }
             status = TRQ_ERROR;
         }
@@ -68,7 +65,7 @@ int32_t trq_update(trq_info_t* device)
     {
         if (num_conn_errors++ < 10) 
         { // don't spam
-            OS_printf("NOS command_torquer:  Socket not connected (%d).\n", sockfd);
+            printf("NOS command_torquer:  Socket not connected (%d).\n", sockfd);
         }
         status = TRQ_ERROR;
     }

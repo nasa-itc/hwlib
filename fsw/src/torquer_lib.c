@@ -18,7 +18,7 @@
 #include "libtrq.h"
 
 // ok... dummy usage... just so when the linker creates hwlib.so it does not throw out the libtrq.c.o object from libnoslink.a as not used
-void dummy()
+void trq_dummy()
 {
     trq_info_t device;
     int32_t status = trq_init(&device);

@@ -54,6 +54,7 @@ typedef struct {
 } socket_info_t;
 
 /* Function Prototypes */
+void socket_dummy(void);
 int32_t socket_create(socket_info_t* socket_info);
 int32_t socket_listen(socket_info_t* socket_info);
 int32_t socket_accept(socket_info_t* socket_info);

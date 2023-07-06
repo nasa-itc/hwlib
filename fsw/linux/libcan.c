@@ -25,8 +25,12 @@ int32_t can_init_dev(can_info_t* device)
 {
   int retVal;
   struct timeval tv;
+  char devname[10];
 
-  retVal = can_set_bitrate(device->handle, device->bitrate);
+  // Get device name from handle
+  snprintf(devname, 10, "can%d", device->handle);
+
+  retVal = can_set_bitrate(devname, device->bitrate);
   if (retVal < 0) 
   {
     OS_printf("Errno: %d \n", errno);
@@ -47,7 +51,7 @@ int32_t can_init_dev(can_info_t* device)
 
   /* TODO: Add option for filters */
 
-  retVal = can_do_start(device->handle);
+  retVal = can_do_start(devname);
   if (retVal < 0) 
   {
     return CAN_UP_ERR;
@@ -59,7 +63,7 @@ int32_t can_init_dev(can_info_t* device)
     return CAN_SOCK_OPEN_ERR; 
   }
 
-  strcpy(device->ifr.ifr_name, device->handle);
+  strcpy(device->ifr.ifr_name, devname);
 
   retVal = ioctl(device->sock, SIOCGIFINDEX, &device->ifr);
   if (retVal < 0) 
@@ -97,6 +101,10 @@ int32_t can_set_modes(can_info_t* device)
 {
   struct can_ctrlmode cm;
   memset(&cm, 0, sizeof(cm));
+  char devname[10];
+
+  // Get device name from handle
+  snprintf(devname, 10, "can%d", device->handle);
 
   cm.mask = CAN_CTRLMODE_LOOPBACK     | // Remaining flags not supported
             //CAN_CTRLMODE_LISTENONLY     | 
@@ -114,7 +122,7 @@ int32_t can_set_modes(can_info_t* device)
              (device->listenOnly << 1)     | 
               device->loopback;
 
-  int retVal = can_set_ctrlmode(device->handle, &cm);
+  int retVal = can_set_ctrlmode(devname, &cm);
 
   if (retVal < 0) 
   {
@@ -187,10 +195,14 @@ int32_t can_read(can_info_t* device)
 int32_t can_close_device(can_info_t* device) 
 {
   int retVal;
+  char devname[10];
+
+  // Get device name from handle
+  snprintf(devname, 10, "can%d", device->handle);
   
   close(device->sock);
 
-  retVal = can_do_stop(device->handle);
+  retVal = can_do_stop(devname);
   if (retVal < 0) 
   {
     return CAN_DOWN_ERR;

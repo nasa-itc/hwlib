@@ -41,67 +41,90 @@ void nos_destroy_i2c_link(void)
 
 }
 
-int32_t i2c_master_init(i2c_bus_info_t* device)
+static NE_I2CHandle* nos_get_i2c_device(int handle)
 {
-    // Do nothing;
-    return OS_SUCCESS;
-}
-
-/* nos i2c transaction */
-int32_t i2c_master_transaction(int32_t handle, uint8_t addr, void * txbuf, uint8_t txlen,
-                               void * rxbuf, uint8_t rxlen, uint16_t timeout)
-{
-    int32_t result = OS_ERROR;
-
+    NE_I2CHandle *dev = NULL;
     if(handle < NUM_I2C_DEVICES)
     {
+        dev = i2c_device[handle];
+    }
+    return dev;
+}
+
+int32_t i2c_master_init(i2c_bus_info_t* device)
+{
+    int32_t status = I2C_SUCCESS;
+    if(device->handle >= 0 && device->handle < NUM_I2C_DEVICES)
+    {
         /* get i2c device handle */
-        NE_I2CHandle **dev = &i2c_device[handle];
+        NE_I2CHandle **dev = &i2c_device[device->handle];
         if(*dev == NULL)
         {
             /* get nos i2c connection params */
-            const nos_connection_t *con = &nos_i2c_connection[handle];
+            const nos_connection_t *con = &nos_i2c_connection[device->handle];
 
             /* try to initialize master */
-            *dev = NE_i2c_init_master3(hub, 10, con->uri, con->bus); // the value 10 indicates it's the master on the bus
+            *dev = NE_i2c_init_master3(hub, 10, con->uri, con->bus); // the value 10 is used in the NOS3 case to indicate the master
             if(*dev == NULL)
             {
                 OS_printf("nos i2c_init_master failed\n");
+                device->isOpen = I2C_CLOSED;
+                status = I2C_ERROR;
+            }
+            else
+            {
+                device->isOpen = I2C_OPEN;
             }
         }
+    }
+    else
+    {
+        OS_printf("i2c_init_master: Handle not found\n");
+        device->isOpen = I2C_CLOSED;
+        status = I2C_ERROR;
+    }
+    return status;
+}
 
-        /* i2c transaction */
-        if(*dev)
+/* nos i2c transaction */
+int32_t i2c_master_transaction(i2c_bus_info_t* device, uint8_t addr, void * txbuf, uint8_t txlen,
+                               void * rxbuf, uint8_t rxlen, uint16_t timeout)
+{
+    int32_t result = I2C_ERROR;
+
+    NE_I2CHandle *dev = nos_get_i2c_device((int)device->handle);
+
+    /* i2c transaction */
+    if(dev)
+    {
+        if ((txlen == 0) && (rxlen == 0)) { // force success if both buffer lengths are 0
+            result = I2C_SUCCESS;
+        } else if(NE_i2c_transaction(dev, addr, txbuf, txlen, rxbuf, rxlen) == NE_I2C_SUCCESS)
         {
-            if ((txlen == 0) && (rxlen == 0)) { // force success if both buffer lengths are 0
-                result = OS_SUCCESS;
-            } else if(NE_i2c_transaction(*dev, addr, txbuf, txlen, rxbuf, rxlen) == NE_I2C_SUCCESS)
-            {
-                result = OS_SUCCESS;
-            }
+            result = I2C_SUCCESS;
         }
     }
 
     return result;
 }
 
-int32_t i2c_multiple_transaction(int32_t handle, uint8_t addr, struct i2c_rdwr_ioctl_data* rdwr_data, uint16_t timeout)
+int32_t i2c_multiple_transaction(i2c_bus_info_t* device, uint8_t addr, struct i2c_rdwr_ioctl_data* rdwr_data, uint16_t timeout)
 {
-    int32_t result = OS_ERROR;
+    int32_t result = I2C_ERROR;
     uint32_t i;
 
     for (i = 0; i < rdwr_data->nmsgs; i++)
     {
         if (rdwr_data->msgs[i].flags == 0)
         {   // Write
-            result = i2c_master_transaction(handle, addr, (void*) rdwr_data->msgs[i].buf, (uint8_t) rdwr_data->msgs[i].len, (void*) NULL, 0, timeout);
+            result = i2c_master_transaction(device, addr, (void*) rdwr_data->msgs[i].buf, (uint8_t) rdwr_data->msgs[i].len, (void*) NULL, 0, timeout);
         }
         else
         {   // Read
-            result = i2c_master_transaction(handle, addr, (void*) NULL, 0, (void*) rdwr_data->msgs[i].buf, (uint8_t) rdwr_data->msgs[i].len, timeout);
+            result = i2c_master_transaction(device, addr, (void*) NULL, 0, (void*) rdwr_data->msgs[i].buf, (uint8_t) rdwr_data->msgs[i].len, timeout);
         }
         
-        if (result != OS_SUCCESS)
+        if (result != I2C_SUCCESS)
         {
             break;
         }
@@ -110,3 +133,17 @@ int32_t i2c_multiple_transaction(int32_t handle, uint8_t addr, struct i2c_rdwr_i
     return result;
 }
 
+int32_t i2c_master_close(i2c_bus_info_t* device) 
+{
+    if (device->handle >= 0)
+    {
+        NE_I2CHandle *dev = nos_get_i2c_device((int)device->handle);
+        if(dev)
+        {
+            NE_i2c_close(&dev);
+            i2c_device[device->handle] = 0;
+            device->isOpen = I2C_CLOSED;
+        }
+    }
+    return I2C_SUCCESS;
+}

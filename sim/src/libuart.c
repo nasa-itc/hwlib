@@ -54,7 +54,7 @@ void nos_destroy_usart_link(void)
 int32_t uart_init_port(uart_info_t* device)
 {
     int32_t status = OS_SUCCESS;
-    if(device->handle >= 0)
+    if(device->handle >= 0 && device->handle < NUM_USARTS)
     {
 
         /* get usart device handle */
@@ -103,9 +103,9 @@ static NE_Uart* nos_get_usart_device(int handle)
 }
 
 /* usart flush */
-int32_t uart_flush(int32_t handle)
+int32_t uart_flush(uart_info_t* device)
 {
-    NE_Uart *dev = nos_get_usart_device((int)handle);
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
     if(dev)
     {
         NE_uart_flush(dev);
@@ -114,10 +114,10 @@ int32_t uart_flush(int32_t handle)
 }
 
 /* usart write */
-int32_t uart_write_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
+int32_t uart_write_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
     int32_t status = OS_ERR_FILE;
-    NE_Uart *dev = nos_get_usart_device((int)handle);
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
     if(dev)
     {
         status = NE_uart_write(dev, (const uint8_t*)data, numBytes); //Can this function return -1?
@@ -126,7 +126,7 @@ int32_t uart_write_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
 }
 
 /* usart read */
-int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
+int32_t uart_read_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
     uint32_t status = OS_ERR_FILE;
 
@@ -135,7 +135,7 @@ int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
         uint8_t c = 0xFF;
         int  i;
         int stat;
-        NE_Uart *dev = nos_get_usart_device((int)handle);
+        NE_Uart *dev = nos_get_usart_device((int)device->handle);
         if(dev)
         {
             for (i = 0; i < (int)numBytes; i++) //TODO: Add ability to switch between blocking and non-blocking?
@@ -171,10 +171,10 @@ int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
 }
 
 /* usart number bytes available */
-int32_t uart_bytes_available(int32_t handle)
+int32_t uart_bytes_available(uart_info_t* device)
 {
     int bytes = 0;
-    NE_Uart *dev = nos_get_usart_device((int)handle);
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
     if(dev)
     {
         bytes = (int)NE_uart_available(dev);
@@ -182,16 +182,17 @@ int32_t uart_bytes_available(int32_t handle)
     return bytes;
 }
 
-int32_t uart_close_port(int32_t handle) 
+int32_t uart_close_port(uart_info_t* device) 
 {
     NE_UartStatus status;
-    NE_Uart *dev = nos_get_usart_device((int)handle);
-    if (handle >= 0)
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
+    if (device->handle >= 0)
     {
         if(dev)
         {
             status = NE_uart_close(&dev);
-            usart_device[handle] = 0;
+            usart_device[device->handle] = 0;
+            device->isOpen = PORT_CLOSED;
         }
     }
     if (status == NE_UART_SUCCESS) {

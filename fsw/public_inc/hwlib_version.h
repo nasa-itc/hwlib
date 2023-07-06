@@ -20,7 +20,7 @@ ivv-itc@lists.nasa.gov
 #define _hw_lib_version_h_
 
 
-#define HW_LIB_MAJOR_VERSION    1
+#define HW_LIB_MAJOR_VERSION    2
 #define HW_LIB_MINOR_VERSION    0
 #define HW_LIB_REVISION         0
 #define HW_LIB_MISSION_REV      0

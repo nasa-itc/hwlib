@@ -65,6 +65,8 @@ typedef struct {
     bool        enabled;
 } trq_info_t;
 
+void trq_dummy(void);
+
 int32_t trq_set_time_high(trq_info_t* device, uint32_t new_time);
 int32_t trq_set_period(trq_info_t* device);
 int32_t trq_set_direction(trq_info_t* device, bool direction);

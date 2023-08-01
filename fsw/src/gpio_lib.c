@@ -18,7 +18,7 @@
 #include "libgpio.h"
 
 // ok... dummy usage... just so when the linker creates hwlib.so it does not throw out the libgpio.c.o object from libnoslink.a as not used
-void dummy2()
+void gpio_dummy()
 {
     gpio_info_t device;
     int32_t status = gpio_init(&device);

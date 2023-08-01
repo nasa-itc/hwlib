@@ -29,6 +29,8 @@ extern "C" {
 #define MEM_SUCCESS            OS_SUCCESS
 #define MEM_ERROR              OS_ERROR
 
+void mem_dummy(void);
+
 int32_t devmem_write(uint32_t addr, uint8_t *in, int32_t length); 
 int32_t devmem_read(uint32_t addr, uint8_t *out, int32_t length); 
 

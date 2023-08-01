@@ -18,7 +18,7 @@
 #include "libmem.h"
 
 // ok... dummy usage... just so when the linker creates hwlib.so it does not throw out the libmem.c.o object from libnoslink.a as not used
-void dummy4()
+void mem_dummy()
 {
     uint8_t tmp;
     int32_t status = devmem_read(0,&tmp, 1);

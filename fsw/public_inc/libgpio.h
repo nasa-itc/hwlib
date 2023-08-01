@@ -58,6 +58,8 @@ typedef struct
 } gpio_info_t;
 
 /* Prototypes */
+void gpio_dummy(void);
+
 /*
  * Initialize GPIO pin
  * @param device - GPIO device information

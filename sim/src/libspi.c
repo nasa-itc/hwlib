@@ -45,7 +45,7 @@ void nos_init_spi_link(void)
 {
     // Init the mutexes for chip select
     int i;
-    for(i = 0; i < NUM_SPI_DEVICES; i++)
+    for(i = 0; i < MAX_SPI_BUSES; i++)
     {
         if (pthread_mutex_init(&spi_bus_mutex[i], NULL) != 0)
         {
@@ -59,7 +59,7 @@ void nos_destroy_spi_link(void)
 {
     /* clean up spi buses */
     int i;
-    for(i = 0; i < NUM_SPI_DEVICES; i++)
+    for(i = 0; i < MAX_SPI_BUSES; i++)
     {
         NE_SpiHandle *dev = spi_device[i];
         if(dev) NE_spi_close(&dev);

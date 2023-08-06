@@ -19,12 +19,6 @@ ivv-itc@lists.nasa.gov
 #include <stdint.h>
 #include <stdlib.h>
 
-/* psp */
-#include <cfe_psp.h>
-
-/* osal */
-#include <osapi.h>
-
 /* nos */
 #include <Uart/Client/CInterface.h>
 
@@ -32,57 +26,36 @@ ivv-itc@lists.nasa.gov
 #include "libuart.h"
 
 /* size of uart buffer */
-#define USART_RX_BUF_SIZE    512
+#define USART_RX_BUF_SIZE    4096
 
 /* usart device handles */
 static NE_Uart *usart_device[NUM_USARTS] = {0};
 
-/* usart mutex */
-static uint32 nos_usart_mutex = 0;
-
 /* public prototypes */
-void nos_init_usart_link(void);
 void nos_destroy_usart_link(void);
 
 /* private prototypes */
 static NE_Uart* nos_get_usart_device(int handle);
-
-/* initialize nos engine usart link */
-void nos_init_usart_link(void)
-{
-    /* create mutex */
-    int32 result = OS_MutSemCreate(&nos_usart_mutex, "nos_usart", 0);
-
-}
 
 /* destroy nos engine usart link */
 void nos_destroy_usart_link(void)
 {
     int i;
 
-    OS_MutSemTake(nos_usart_mutex);
-
     /* clean up usart buses */
-    
     for(i = 0; i <= NUM_USARTS; i++)
     {
         NE_Uart *dev = usart_device[i];
         if(dev) NE_uart_close(&dev);
     }
-    
-    OS_MutSemGive(nos_usart_mutex);
-
-    /* destroy mutex */
-    int32 result = OS_MutSemDelete(nos_usart_mutex);
 }
 
 /* init usart */
-int32 uart_init_port(uart_info_t* device)
+int32_t uart_init_port(uart_info_t* device)
 {
     int32_t status = OS_SUCCESS;
-    if(device->handle >= 0)
+    if(device->handle >= 0 && device->handle < NUM_USARTS)
     {
-        OS_MutSemTake(nos_usart_mutex);
 
         /* get usart device handle */
         NE_Uart **dev = &usart_device[device->handle];
@@ -108,7 +81,6 @@ int32 uart_init_port(uart_info_t* device)
 		        status = OS_ERR_FILE;
             }
         }
-        OS_MutSemGive(nos_usart_mutex);
     }
     else
     {
@@ -130,34 +102,42 @@ static NE_Uart* nos_get_usart_device(int handle)
     return dev;
 }
 
-/* usart write */
-int32 uart_write_port(int32 handle, uint8 data[], const uint32 numBytes)
+/* usart flush */
+int32_t uart_flush(uart_info_t* device)
 {
-    int32_t status = OS_ERR_FILE;
-    NE_Uart *dev = nos_get_usart_device((int)handle);
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
     if(dev)
     {
-        OS_MutSemTake(nos_usart_mutex);
+        NE_uart_flush(dev);
+    }
+    return UART_SUCCESS;
+}
+
+/* usart write */
+int32_t uart_write_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
+{
+    int32_t status = OS_ERR_FILE;
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
+    if(dev)
+    {
         status = NE_uart_write(dev, (const uint8_t*)data, numBytes); //Can this function return -1?
-        OS_MutSemGive(nos_usart_mutex);
     }
     return status;
 }
 
 /* usart read */
-int32 uart_read_port(int32 handle, uint8 data[], const uint32 numBytes)
+int32_t uart_read_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
-    uint32 status = OS_ERR_FILE;
+    uint32_t status = OS_ERR_FILE;
 
     if (data != NULL) //Check that there is actually data to read
     { 
-        char c = 0xFF;
+        uint8_t c = 0xFF;
         int  i;
         int stat;
-        NE_Uart *dev = nos_get_usart_device((int)handle);
+        NE_Uart *dev = nos_get_usart_device((int)device->handle);
         if(dev)
         {
-            OS_MutSemTake(nos_usart_mutex);
             for (i = 0; i < (int)numBytes; i++) //TODO: Add ability to switch between blocking and non-blocking?
             {
                 /*
@@ -174,42 +154,46 @@ int32 uart_read_port(int32 handle, uint8 data[], const uint32 numBytes)
                 //BLOCKING MODE
                 do {
                     stat = NE_uart_getc(dev, (uint8_t*)&c);
+                    if (stat == 1)
+                    {
+                        OS_TaskDelay(1);
+                    }
                 } while(stat); 
                 data[i] = c;
             }
-            OS_MutSemGive(nos_usart_mutex);
             status = numBytes;
             
             return status;
         }
-
         return status; //There is data, but can't read from device
     }
-
     return status; //Following arm_inux model
 }
 
 /* usart number bytes available */
-int32 uart_bytes_available(int32 handle)
+int32_t uart_bytes_available(uart_info_t* device)
 {
     int bytes = 0;
-    NE_Uart *dev = nos_get_usart_device((int)handle);
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
     if(dev)
     {
-        OS_MutSemTake(nos_usart_mutex);
         bytes = (int)NE_uart_available(dev);
-        OS_MutSemGive(nos_usart_mutex);
     }
     return bytes;
 }
 
-int32 uart_close_port(int32 handle) 
+int32_t uart_close_port(uart_info_t* device) 
 {
     NE_UartStatus status;
-    NE_Uart *dev = nos_get_usart_device((int)handle);
-    if (handle >= 0)
+    NE_Uart *dev = nos_get_usart_device((int)device->handle);
+    if (device->handle >= 0)
     {
-        status = NE_uart_close(&dev);
+        if(dev)
+        {
+            status = NE_uart_close(&dev);
+            usart_device[device->handle] = 0;
+            device->isOpen = PORT_CLOSED;
+        }
     }
     if (status == NE_UART_SUCCESS) {
         return OS_SUCCESS;

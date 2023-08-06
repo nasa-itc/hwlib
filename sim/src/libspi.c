@@ -18,9 +18,7 @@ ivv-itc@lists.nasa.gov
 #include "nos_link.h"
 #include <stdint.h>
 #include <stdlib.h>
-
-/* psp */
-#include <cfe_psp.h>
+#include <pthread.h>
 
 /* nos */
 #include <Spi/Client/CInterface.h>
@@ -29,7 +27,7 @@ ivv-itc@lists.nasa.gov
 #include "libspi.h"
 
 /* spi bus mutex */
-spi_mutex_t spi_bus_mutex[MAX_SPI_BUSES];
+pthread_mutex_t spi_bus_mutex[MAX_SPI_BUSES];
 uint32_t handle_count = 0;
 
 /* spi device handles */
@@ -45,7 +43,15 @@ static NE_SpiHandle* nos_get_spi_device(spi_info_t* device);
 /* initialize nos engine spi link */
 void nos_init_spi_link(void)
 {
-    // Do nothing
+    // Init the mutexes for chip select
+    int i;
+    for(i = 0; i < MAX_SPI_BUSES; i++)
+    {
+        if (pthread_mutex_init(&spi_bus_mutex[i], NULL) != 0)
+        {
+            OS_printf("HWLIB: Create spi mutex error for spi bus %d", i);
+        }
+    }
 }
 
 /* destroy nos engine spi link */
@@ -53,64 +59,49 @@ void nos_destroy_spi_link(void)
 {
     /* clean up spi buses */
     int i;
-    for(i = 0; i < NUM_SPI_DEVICES; i++)
+    for(i = 0; i < MAX_SPI_BUSES; i++)
     {
         NE_SpiHandle *dev = spi_device[i];
         if(dev) NE_spi_close(&dev);
+
+        if (pthread_mutex_destroy(&spi_bus_mutex[i]) != 0)
+        {
+            OS_printf("HWLIB: Destroy spi mutex error for spi bus %d", i);
+        }
     }
 }
 
 /* nos spi init */
-int32 spi_init_dev(spi_info_t* device)
+int32_t spi_init_dev(spi_info_t* device)
 {
     int     status = SPI_SUCCESS;
     char    buffer[16];
 
-    // Initialize the bus mutex
-    if (device->bus < MAX_SPI_BUSES)
+
+    pthread_mutex_lock(&spi_bus_mutex[device->bus]);
+    
+    /* get spi device handle */
+    NE_SpiHandle **dev = &spi_device[device->handle];
+    if(*dev == NULL)
     {
-        if (spi_bus_mutex[device->bus].users == 0)
+        /* get nos spi connection params */
+        const nos_connection_t *con = &nos_spi_connection[(device->bus * 10) + device->cs];
+
+        /* try to initialize master */
+        *dev = NE_spi_init_master3(hub, con->uri, con->bus);
+        if(*dev)
         {
-            snprintf(buffer, 16, "spi_%d_mutex", device->bus);
-            status = OS_MutSemCreate(&spi_bus_mutex[device->bus].spi_mutex, buffer, 0);
-            if (status != OS_SUCCESS)
-            {
-                CFE_EVS_SendEvent(SPI_ERR_MUTEX_CREATE, CFE_EVS_ERROR, "HWLIB: Create spi mutex error %d", status);
-                return status;
-            }
+            status = SPI_SUCCESS;
         }
-        spi_bus_mutex[device->bus].users++;
-    }
-    else
-    {
-        CFE_EVS_SendEvent(SPI_ERR_MUTEX_CREATE, CFE_EVS_ERROR, "HWLIB: Create spi mutex error %d, bus invalid!", status);
-        return status;
-    }
-
-    if (OS_MutSemTake(spi_bus_mutex[device->bus].spi_mutex) == OS_SUCCESS)
-    {
-        /* get spi device handle */
-        NE_SpiHandle **dev = &spi_device[device->handle];
-        if(*dev == NULL)
+        else
         {
-            /* get nos spi connection params */
-            const nos_connection_t *con = &nos_spi_connection[(device->bus * 10) + device->cs];
-
-            /* try to initialize master */
-            *dev = NE_spi_init_master3(hub, con->uri, con->bus);
-            if(*dev)
-            {
-                status = SPI_SUCCESS;
-            }
-            else
-            {
-                OS_MutSemGive(spi_bus_mutex[device->bus].spi_mutex);
-                CFE_EVS_SendEvent(SPI_ERR_FILE_OPEN, CFE_EVS_ERROR, "HWLIB: Open SPI device \"%s\" error %d", device->deviceString, status);
-                return status;
-            }
+            pthread_mutex_unlock(&spi_bus_mutex[device->bus]);
+            OS_printf("HWLIB: Open SPI device \"%s\" error %d", device->deviceString, status);
+            return status;
         }
     }
-    OS_MutSemGive(spi_bus_mutex[device->bus].spi_mutex);
+
+    pthread_mutex_unlock(&spi_bus_mutex[device->bus]);
 
     // Set open flag
     device->isOpen = SPI_DEVICE_OPEN;
@@ -135,11 +126,11 @@ static NE_SpiHandle* nos_get_spi_device(spi_info_t* device)
 }
 
 /* nos spi chip select */
-int32 spi_select_chip(spi_info_t* device)
+int32_t spi_select_chip(spi_info_t* device)
 {
-    uint32_t status = SPI_SUCCESS;
+    int32_t status = SPI_SUCCESS;
 
-    status = OS_MutSemTake(spi_bus_mutex[device->bus].spi_mutex);
+    pthread_mutex_lock(&spi_bus_mutex[device->bus]);
 
     NE_SpiHandle *dev = nos_get_spi_device(device);
     if(dev)
@@ -151,11 +142,11 @@ int32 spi_select_chip(spi_info_t* device)
 }
 
 /* nos spi chip unselect */
-int32 spi_unselect_chip(spi_info_t* device)
+int32_t spi_unselect_chip(spi_info_t* device)
 {
-    uint32_t status = SPI_SUCCESS;
+    int32_t status = SPI_SUCCESS;
 
-    status = OS_MutSemGive(spi_bus_mutex[device->bus].spi_mutex);
+    pthread_mutex_unlock(&spi_bus_mutex[device->bus]);
 
     NE_SpiHandle *dev = nos_get_spi_device(device);
     if(dev)
@@ -167,7 +158,7 @@ int32 spi_unselect_chip(spi_info_t* device)
 }
 
 /* nos spi write */
-int32 spi_write(spi_info_t* device, uint8 data[], const uint32 numBytes)
+int32_t spi_write(spi_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
     int status = SPI_SUCCESS;
 
@@ -184,7 +175,7 @@ int32 spi_write(spi_info_t* device, uint8 data[], const uint32 numBytes)
 }
 
 /* nos spi read */
-int32 spi_read(spi_info_t* device, uint8 data[], const uint32 numBytes)
+int32_t spi_read(spi_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
     int status = SPI_SUCCESS;
 
@@ -200,7 +191,7 @@ int32 spi_read(spi_info_t* device, uint8 data[], const uint32 numBytes)
     return status;
 }
 
-int32 spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer, uint32_t length, uint16_t delay, uint8_t bits, uint8_t deselect)
+int32_t spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer, uint32_t length, uint16_t delay, uint8_t bits, uint8_t deselect)
 {
     int status = SPI_SUCCESS;
 
@@ -214,4 +205,19 @@ int32 spi_transaction(spi_info_t* device, uint8_t *txBuff, uint8_t * rxBuffer, u
     }
 
     return status;
+}
+
+int32_t spi_close_device(spi_info_t* device)
+{
+	if (device->handle >= 0)
+    {
+        NE_SpiHandle *dev = nos_get_spi_device(device);
+        if(dev)
+        {
+            NE_spi_close(&dev);
+            spi_device[device->handle] = 0;
+            device-> isOpen = SPI_DEVICE_CLOSED;
+        }
+    }
+    return OS_SUCCESS;
 }

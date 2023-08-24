@@ -62,5 +62,6 @@ int32_t socket_connect(socket_info_t* socket_info, char* remote_ip_address, int 
 int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, size_t* bytes_sent, char* remote_ip_address, int remote_port_num);
 int32_t socket_recv(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, size_t* bytes_recvd);
 int32_t socket_close(socket_info_t* socket_info);
+int32_t HostToIp(const char * hostname, char* ip);
 
 #endif

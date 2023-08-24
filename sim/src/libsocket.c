@@ -1,9 +1,12 @@
 #include "libsocket.h"
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 // Creates an endpoint for communication
 // Binds stream, server sockets to localhost and port number
@@ -84,8 +87,20 @@ int32_t socket_create(socket_info_t* socket_info)
     {
         // Prepare the sockaddr_in structure
         sockaddr.sin_family = address_family;
-        sockaddr.sin_addr.s_addr = inet_addr(socket_info->ip_address);
-        sockaddr.sin_port = htons(socket_info->port_num);       
+        if(inet_addr(socket_info->ip_address) != INADDR_NONE)
+        {
+            sockaddr.sin_addr.s_addr = inet_addr(socket_info->ip_address);
+        }
+        else
+        {
+            char ip[16];
+            int check = HostToIp(socket_info->ip_address, ip);
+            if(check == 0)
+            {
+                sockaddr.sin_addr.s_addr = inet_addr(ip);
+            }
+        }
+        sockaddr.sin_port = htons(socket_info->port_num);
 
         // Bind the socket 
         ret = bind(socket_info->sockfd,(struct sockaddr *)&sockaddr , sizeof(sockaddr));
@@ -451,4 +466,24 @@ int32_t socket_close(socket_info_t* socket_info)
     // TBD
 
     return status;
+}
+
+int HostToIp(const char * hostname, char* ip)
+{
+    struct hostent *he;
+    struct in_addr **addr_list;
+    
+    if ( (he = gethostbyname( hostname ) ) == NULL )
+    {
+        return 1;
+    }
+
+    addr_list = (struct in_addr **) he->h_addr_list;
+
+    for(int i=0; addr_list[i] != NULL; i++)
+    {
+        strcpy(ip, inet_ntoa(*addr_list[i]) );
+        return 0;
+    }
+    return 1;
 }

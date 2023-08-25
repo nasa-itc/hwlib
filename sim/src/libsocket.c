@@ -336,7 +336,19 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
         {
             // Prepare the remote_sockaddr structure 
             remote_sockaddr.sin_family = socket_info->address_family;
-            remote_sockaddr.sin_addr.s_addr = inet_addr(remote_ip_address);
+            if(inet_addr(remote_ip_address) != INADDR_NONE)
+            {
+                remote_sockaddr.sin_addr.s_addr = inet_addr(remote_ip_address);
+            }
+            else
+            {
+                char ip[16];
+                int check = HostToIp(remote_ip_address, ip);
+                if(check == 0)
+                {
+                    remote_sockaddr.sin_addr.s_addr = inet_addr(ip);
+                }
+            }
             remote_sockaddr.sin_port = htons(remote_port_num);
 
             ret = sendto(socket_info->sockfd, (void*)buffer, buflen, 0, (struct sockaddr *)&remote_sockaddr , sizeof(remote_sockaddr));

@@ -57,7 +57,7 @@ int32_t trq_update(trq_info_t* device)
         {
             if (num_send_errors++ < 10) 
             { // don't spam
-                printf("NOS command_torquer:  Only sent %d bytes of %d bytes.  Message was:  %s\n", bytes_sent, strlen(message), message);
+                printf("NOS command_torquer:  Only sent %ld bytes of %ld bytes.  Message was:  %s\n", bytes_sent, strlen(message), message);
             }
             status = TRQ_ERROR;
         }

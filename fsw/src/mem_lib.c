@@ -21,5 +21,5 @@
 void mem_dummy()
 {
     uint8_t tmp;
-    int32_t status = devmem_read(0,&tmp, 1);
+    devmem_read(0,&tmp, 1);
 }

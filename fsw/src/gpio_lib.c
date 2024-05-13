@@ -21,5 +21,5 @@
 void gpio_dummy()
 {
     gpio_info_t device;
-    int32_t status = gpio_init(&device);
+    gpio_init(&device);
 }

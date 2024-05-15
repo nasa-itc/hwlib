@@ -1,9 +1,12 @@
 #include "libsocket.h"
 
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 // Creates an endpoint for communication
 // Binds stream, server sockets to localhost and port number
@@ -84,8 +87,20 @@ int32_t socket_create(socket_info_t* socket_info)
     {
         // Prepare the sockaddr_in structure
         sockaddr.sin_family = address_family;
-        sockaddr.sin_addr.s_addr = inet_addr(socket_info->ip_address);
-        sockaddr.sin_port = htons(socket_info->port_num);       
+        if(inet_addr(socket_info->ip_address) != INADDR_NONE)
+        {
+            sockaddr.sin_addr.s_addr = inet_addr(socket_info->ip_address);
+        }
+        else
+        {
+            char ip[16];
+            int check = HostToIp(socket_info->ip_address, ip);
+            if(check == 0)
+            {
+                sockaddr.sin_addr.s_addr = inet_addr(ip);
+            }
+        }
+        sockaddr.sin_port = htons(socket_info->port_num);
 
         // Bind the socket 
         ret = bind(socket_info->sockfd,(struct sockaddr *)&sockaddr , sizeof(sockaddr));
@@ -172,7 +187,6 @@ int32_t socket_accept(socket_info_t* socket_info)
     int ret;
     struct sockaddr_in client;
     int32_t status;
-    int ip_str_len;
 
     status = SOCKET_SUCCESS;
 
@@ -290,9 +304,7 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
 {
     int ret;
     int32_t status;
-    int address_family;
     struct sockaddr_in remote_sockaddr;
-    unsigned int i;
     status = SOCKET_SUCCESS;
 
    switch(socket_info->type)
@@ -321,7 +333,19 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
         {
             // Prepare the remote_sockaddr structure 
             remote_sockaddr.sin_family = socket_info->address_family;
-            remote_sockaddr.sin_addr.s_addr = inet_addr(remote_ip_address);
+            if(inet_addr(remote_ip_address) != INADDR_NONE)
+            {
+                remote_sockaddr.sin_addr.s_addr = inet_addr(remote_ip_address);
+            }
+            else
+            {
+                char ip[16];
+                int check = HostToIp(remote_ip_address, ip);
+                if(check == 0)
+                {
+                    remote_sockaddr.sin_addr.s_addr = inet_addr(ip);
+                }
+            }
             remote_sockaddr.sin_port = htons(remote_port_num);
 
             ret = sendto(socket_info->sockfd, (void*)buffer, buflen, 0, (struct sockaddr *)&remote_sockaddr , sizeof(remote_sockaddr));
@@ -334,7 +358,7 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
 
             if(ret != (int) buflen)
             {
-                OS_printf("socket_send: sendto sent only %d out of %d bytes! \n", ret, buflen);
+                OS_printf("socket_send: sendto sent only %d out of %ld bytes! \n", ret, buflen);
             }
 
             *bytes_sent = ret;
@@ -354,7 +378,6 @@ int32_t socket_recv(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
 {
     int c;
     int ret;
-    int ip_str_len;
     int32_t status;
     struct sockaddr_in remote_sockaddr;
 
@@ -451,4 +474,24 @@ int32_t socket_close(socket_info_t* socket_info)
     // TBD
 
     return status;
+}
+
+int HostToIp(const char * hostname, char* ip)
+{
+    struct hostent *he;
+    struct in_addr **addr_list;
+    
+    if ( (he = gethostbyname( hostname ) ) == NULL )
+    {
+        return 1;
+    }
+
+    addr_list = (struct in_addr **) he->h_addr_list;
+
+    for(int i=0; addr_list[i] != NULL; i++)
+    {
+        strcpy(ip, inet_ntoa(*addr_list[i]) );
+        return 0;
+    }
+    return 1;
 }

@@ -75,7 +75,6 @@ void nos_destroy_spi_link(void)
 int32_t spi_init_dev(spi_info_t* device)
 {
     int     status = SPI_SUCCESS;
-    char    buffer[16];
 
 
     pthread_mutex_lock(&spi_bus_mutex[device->bus]);

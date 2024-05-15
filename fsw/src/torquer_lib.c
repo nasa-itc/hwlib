@@ -21,5 +21,5 @@
 void trq_dummy()
 {
     trq_info_t device;
-    int32_t status = trq_init(&device);
+    trq_init(&device);
 }

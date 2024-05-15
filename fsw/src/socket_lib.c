@@ -21,5 +21,5 @@
 void socket_dummy()
 {
     socket_info_t device;
-    int32_t status = socket_create(&device);
+    socket_create(&device);
 }

@@ -52,8 +52,6 @@ ivv-itc@lists.nasa.gov
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 int32 hwlib_Init(void)
 {
-    int32 status = OS_SUCCESS;
-
     /*
      ** Register the events
      */

@@ -104,7 +104,6 @@ int32_t can_read(can_info_t* device)
 int32_t can_master_transaction(can_info_t* device)
 {
     int result = CAN_ERROR;
-    int i;
     
     /* get can device handle */
     NE_CanHandle *dev = nos_get_can_device(device);
@@ -118,6 +117,7 @@ int32_t can_master_transaction(can_info_t* device)
     }
 
     #ifdef LIBCAN_VERBOSE
+        int i;
         OS_printf("can_master_transaction: \n");
         OS_printf("  can_id = 0x%08x \t tx: 0x", device->tx_frame.can_id);
         for (i = 0; i < device->tx_frame.can_dlc; i++)

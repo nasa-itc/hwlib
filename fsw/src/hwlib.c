@@ -53,9 +53,14 @@ ivv-itc@lists.nasa.gov
 int32 hwlib_Init(void)
 {
     /*
-     ** Register the events
-     */
+    ** Register the events
+    */
     CFE_EVS_Register(NULL, 0, CFE_EVS_NO_FILTER);
+
+    /*
+    ** Resolve statement with no effect
+    */
+    
 
     /*
     ** Init all hardware subsystems and interfaces

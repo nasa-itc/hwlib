@@ -15,7 +15,6 @@ NASA IV&V
 ivv-itc@lists.nasa.gov
 */
 
-#include "osapi.h"
 #include "libspi.h"
 
 spi_mutex_t spi_bus_mutex[MAX_SPI_BUSES];

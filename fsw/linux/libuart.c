@@ -130,7 +130,7 @@ int32_t uart_init_port(uart_info_t* device)
     // Set the port to blocking read with timeout of 0.1 sec
     device->options.c_cc[VMIN] = 0;       // min of bytes to read
     device->options.c_cc[VTIME] = 1;      // intra-byte time to wait - tenths of sec
-    fcntl(device->handle, F_SETFL, 0);    // Have serial port block
+    fcntl(device->handle, F_SETFL, O_NONBLOCK);    // Don't have serial port block
 
     // TODO - any other options needed like hw control?
     tcflush(device->handle, TCIOFLUSH);
@@ -144,7 +144,7 @@ int32_t uart_init_port(uart_info_t* device)
   }
   else
   {
-      OS_printf("Oh no!  Open \"%s\" failed and reported: %s \n", device->deviceString, strerror(device->handle));
+      printf("Oh no!  Open \"%s\" failed and reported: %s \n", device->deviceString, strerror(device->handle));
       device->isOpen = PORT_CLOSED;
       status = OS_ERR_FILE;
   }
@@ -152,23 +152,23 @@ int32_t uart_init_port(uart_info_t* device)
   return status;
 }
 
-int32_t uart_bytes_available(int32_t handle)
+int32_t uart_bytes_available(uart_info_t* device)
 {
   int32_t bytes_available = 0;
 
-  ioctl(handle, FIONREAD, &bytes_available);
+  ioctl(device->handle, FIONREAD, &bytes_available);
 
   return bytes_available;
 }
 
-int32_t uart_flush(int32_t handle)
+int32_t uart_flush(uart_info_t* device)
 {
-  tcflush(handle,TCIOFLUSH);
+  tcflush(device->handle,TCIOFLUSH);
 
   return UART_SUCCESS;
 }
 
-int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
+int32_t uart_read_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
   int32_t status = UART_SUCCESS;
 
@@ -176,7 +176,7 @@ int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
   {
     // TODO - this read blocks forever if no serial data on the port.
     //        it should be timing out - need to look into this ASAP
-    status = read(handle, data, numBytes);
+    status = read(device->handle, data, numBytes);
   }
   else
   {
@@ -186,22 +186,22 @@ int32_t uart_read_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
   return status;
 }
 
-int32_t uart_write_port(int32_t handle, uint8_t data[], const uint32_t numBytes)
+int32_t uart_write_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
   int32_t status = UART_SUCCESS;
 
-  status = write(handle, data, numBytes);
+  status = write(device->handle, data, numBytes);
 
   return status;
 }
 
-int32_t uart_close_port(int32_t handle)
+int32_t uart_close_port(uart_info_t* device)
 {
   int32_t status = UART_SUCCESS;
 
-  if (handle >= 0)
+  if (device->handle >= 0)
   {
-    status = close(handle);
+    status = close(device->handle);
     if (0 == status) /* todo remove magic number */
     {
       status = UART_SUCCESS;

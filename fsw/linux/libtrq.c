@@ -37,21 +37,21 @@ int32_t trq_set_time_high(trq_info_t* device, uint32_t new_time)
 {
     if(!device->enabled)
     {
-        OS_printf("trq_set_time_high: Error setting trq %d timer period because it's disabled! \n", device->trq_num); 
+        printf("trq_set_time_high: Error setting trq %d timer period because it's disabled! \n", device->trq_num); 
         return TRQ_ERROR; 
     }
 
 	// Make sure the time high isn't greater than the period
 	if(new_time > device->timer_period_ns) 
     {
-		OS_printf("trq_set_time_high: Error setting trq %d time high, must not exceed the period! \n", device->trq_num);
+		printf("trq_set_time_high: Error setting trq %d time high, must not exceed the period! \n", device->trq_num);
 		return TRQ_TIME_HIGH_VAL_ERR;
 	}
 
     ioctl(device->timerfd, TMRCTR_PWM_DISABLE); 
     if(ioctl(device->timerfd, TMRCTR_PWM_SET_HIGH_TIME, new_time) < 0)
     {
-        OS_printf("trq_set_time_high: Error setting trq %d high time! \n", device->trq_num); 
+        printf("trq_set_time_high: Error setting trq %d high time! \n", device->trq_num); 
         return TRQ_ERROR; 
     }
 	device->timer_high_ns = new_time;
@@ -61,7 +61,7 @@ int32_t trq_set_time_high(trq_info_t* device, uint32_t new_time)
         ioctl(device->timerfd, TMRCTR_PWM_ENABLE);
     }
 
-    //OS_printf("trq_set_time_high: timer_period_ns = %d, timer_high_ns = %d\n", device->timer_period_ns, device->timer_high_ns); 
+    //printf("trq_set_time_high: timer_period_ns = %d, timer_high_ns = %d\n", device->timer_period_ns, device->timer_high_ns); 
     return TRQ_SUCCESS;
 }
 
@@ -79,7 +79,7 @@ int32_t trq_set_period(trq_info_t* device)
 {
     if(!device->enabled)
     {
-        OS_printf("trq_set_period: Error setting trq %d timer period because it's disabled! \n", device->trq_num); 
+        printf("trq_set_period: Error setting trq %d timer period because it's disabled! \n", device->trq_num); 
         return TRQ_ERROR; 
     }
 
@@ -88,7 +88,7 @@ int32_t trq_set_period(trq_info_t* device)
 
     if(ioctl(device->timerfd, TMRCTR_PWM_SET_PERIOD, device->timer_period_ns) < 0)
     {
-        OS_printf("trq_set_period: Error setting trq %d timer period! \n", device->trq_num); 
+        printf("trq_set_period: Error setting trq %d timer period! \n", device->trq_num); 
         return TRQ_ERROR; 
     }
 
@@ -125,7 +125,7 @@ int32_t trq_set_direction(trq_info_t* device, bool direction)
 
     if (write(device->direction_pin_fd, &charVal, 1) != 1) 
     {
-        OS_printf("trq_set_direction: Error setting trq %d direction! \n", device->trq_num);
+        printf("trq_set_direction: Error setting trq %d direction! \n", device->trq_num);
         return TRQ_ERROR;
     }
     device->positive_direction = direction;
@@ -148,7 +148,6 @@ int32_t trq_init(trq_info_t* device)
 {
     int32_t status = TRQ_SUCCESS;
     char devname[TRQ_FNAME_SIZE];
-    char pinname[TRQ_FNAME_SIZE]; 
 
     if(!device->enabled)
     {
@@ -156,7 +155,7 @@ int32_t trq_init(trq_info_t* device)
         snprintf(devname, TRQ_FNAME_SIZE, "/dev/tmrctr%d", device->trq_num); 
         if((device->timerfd = open(devname, O_RDWR, 0)) < 0)
         {
-            OS_printf("trq_init: Error opening axi timer device %s \n", devname); 
+            printf("trq_init: Error opening axi timer device %s \n", devname); 
             return TRQ_INIT_ERR; 
         } 
         //printf("trq_init: Initialized AXI Timer Device: %s for device->trq_num %d \n", devname, device->trq_num);
@@ -165,7 +164,7 @@ int32_t trq_init(trq_info_t* device)
         snprintf(devname, TRQ_FNAME_SIZE, "/dev/hb%d", device->trq_num); 
         if((device->direction_pin_fd = open(devname, O_RDWR, 0)) < 0)
         {
-            OS_printf("trq_init: Error opening axi timer device %s \n", devname); 
+            printf("trq_init: Error opening axi timer device %s \n", devname); 
             return TRQ_INIT_ERR; 
         }
 
@@ -175,7 +174,6 @@ int32_t trq_init(trq_info_t* device)
         {
             return TRQ_INIT_ERR;
         }
-        //OS_printf("trq_init: Initialized direction pin: %s for device->trq_num %d\n", pinname, device->trq_num);
 
         device->enabled = true;
     }
@@ -214,7 +212,6 @@ int32_t trq_command(trq_info_t *device, uint8_t percent_high, bool pos_dir)
 {
     int32_t status = TRQ_SUCCESS;
     uint32_t time_high_ns;
-    char charVal;
 
     if(!device->enabled)
     {
@@ -225,7 +222,7 @@ int32_t trq_command(trq_info_t *device, uint8_t percent_high, bool pos_dir)
     // Calculate time high
     if (percent_high > 100)
     {
-        OS_printf("trq_command: Error setting percent high greater than 100! \n");
+        printf("trq_command: Error setting percent high greater than 100! \n");
         return TRQ_ERROR;
     }
     time_high_ns = device->timer_period_ns * (percent_high / 100.00);
@@ -249,7 +246,7 @@ int32_t trq_command(trq_info_t *device, uint8_t percent_high, bool pos_dir)
         status = trq_set_direction(device, pos_dir);
         if(status != TRQ_SUCCESS)
         {
-            OS_printf("trq_command: Error setting trq %d direction! \n", device->trq_num);
+            printf("trq_command: Error setting trq %d direction! \n", device->trq_num);
             status = TRQ_INIT_ERR;
             return status;
         }
@@ -269,7 +266,7 @@ void trq_close(trq_info_t* device)
 {
     if(!device->enabled)
     {
-        OS_printf("trq_close: Error closing trq %d, already disabled! \n", device->trq_num); 
+        printf("trq_close: Error closing trq %d, already disabled! \n", device->trq_num); 
         return; 
     }
 

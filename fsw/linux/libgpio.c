@@ -72,7 +72,7 @@ int32_t gpio_read(gpio_info_t* device, uint8_t* value)
 {
     int32_t status = GPIO_SUCCESS;
     char buffer[128];
-    char readValue;
+    char readValue[3];
     int fd;
 
     if(device->isOpen != GPIO_OPEN) 
@@ -95,8 +95,8 @@ int32_t gpio_read(gpio_info_t* device, uint8_t* value)
     }
 
     //convert from ASCII to decimal
-    if(readValue == '0') *value = 0;
-    else if(readValue == '1') *value = 1;
+    if(readValue[0] == '0') *value = 0;
+    else if(readValue[0] == '1') *value = 1;
     else {
         *value = 0;
     }

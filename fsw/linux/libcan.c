@@ -216,7 +216,6 @@ int32_t can_close_device(can_info_t* device)
 int32_t can_master_transaction(can_info_t* device) 
 {
   int32_t status;
-  uint8_t i;
 
   status = can_write(device);
   if (status != CAN_SUCCESS)
@@ -233,6 +232,7 @@ int32_t can_master_transaction(can_info_t* device)
   }
 
   #ifdef LIBCAN_VERBOSE
+    uint8_t i;
     OS_printf("can_master_transaction: \n");
     OS_printf("  can_id = 0x%08x \t tx: 0x", device->tx_frame.can_id);
     for (i = 0; i < device->tx_frame.can_dlc; i++)

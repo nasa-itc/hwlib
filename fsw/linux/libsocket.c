@@ -172,7 +172,6 @@ int32_t socket_accept(socket_info_t* socket_info)
     int ret;
     struct sockaddr_in client;
     int32_t status;
-    int ip_str_len;
 
     status = SOCKET_SUCCESS;
 
@@ -290,9 +289,7 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
 {
     int ret;
     int32_t status;
-    int address_family;
     struct sockaddr_in remote_sockaddr;
-    unsigned int i;
     status = SOCKET_SUCCESS;
 
    switch(socket_info->type)
@@ -354,7 +351,6 @@ int32_t socket_recv(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
 {
     int c;
     int ret;
-    int ip_str_len;
     int32_t status;
     struct sockaddr_in remote_sockaddr;
 

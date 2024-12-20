@@ -112,5 +112,5 @@ int32_t trq_command(trq_info_t *device, uint8_t percent_high, bool pos_dir)
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 void trq_close(trq_info_t* device)
 {
-    return TRQ_SUCCESS;
+    return;
 }

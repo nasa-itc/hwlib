@@ -37,7 +37,11 @@ ivv-itc@lists.nasa.gov
 /************************************************************************
 ** Outside of cFS build
 *************************************************************************/
-#ifndef OS_SUCCESS
+#ifdef OS_SUCCESS
+    // Inside cFS
+    #include "cfe_endian.h"
+#else
+    // Outside cFS
     #pragma GCC diagnostic ignored "-Wall"
     #pragma GCC diagnostic warning "-Wunused-value"
     #define OS_printf           printf

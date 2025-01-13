@@ -11,5 +11,5 @@ include_directories(inc
 aux_source_directory(src NOSLINK_SRC)
 
 add_library(noslink STATIC ${NOSLINK_SRC})
-target_link_libraries(noslink ${NOSENGINE_LIBRARIES})
+target_link_libraries(noslink ${NOSENGINE_LIBRARIES} gcov)
 

@@ -478,20 +478,34 @@ int32_t socket_close(socket_info_t* socket_info)
 
 int HostToIp(const char * hostname, char* ip)
 {
-    struct hostent *he;
-    struct in_addr **addr_list;
-    
-    if ( (he = gethostbyname( hostname ) ) == NULL )
+    struct addrinfo hints, *res, *p;
+    int status;
+    void *addr;
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET; // Uses IPV4 only.  AF_UNSPEC for IPV6 Support
+    hints.ai_socktype = SOCK_STREAM;
+
+    if ((status = getaddrinfo(hostname, NULL, &hints, &res)) != 0)
     {
         return 1;
     }
 
-    addr_list = (struct in_addr **) he->h_addr_list;
-
-    for(int i=0; addr_list[i] != NULL; i++)
+    for (p = res; p != NULL; p = p->ai_next)
     {
-        strcpy(ip, inet_ntoa(*addr_list[i]) );
-        return 0;
+        struct sockaddr_in *ipv4 = (struct sockaddr_in *)p->ai_addr;
+        addr = &(ipv4->sin_addr);
+
+        // Convert IP to String
+        if (inet_ntop(p->ai_family, addr, ip, INET_ADDRSTRLEN) == NULL)
+        {
+            freeaddrinfo(res);
+            return 1;
+        }
+
+        freeaddrinfo(res);
+        return 0; // IP Found
     }
-    return 1;
+    freeaddrinfo(res);
+    return 1; // IP NOT Found
 }

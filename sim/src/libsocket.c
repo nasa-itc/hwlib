@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200112L
 #include "libsocket.h"
 
 #include <arpa/inet.h>

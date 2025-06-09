@@ -15,192 +15,176 @@ NASA IV&V
 ivv-itc@lists.nasa.gov
 */
 
-#include "nos_link.h"
 #include <stdint.h>
 #include <stdlib.h>
-
-/* nos */
-#include <Uart/Client/CInterface.h>
-
-/* hwlib API */
+#include <string.h>
+#include "simulith.h"
 #include "libuart.h"
 
 /* size of uart buffer */
+#define NUM_USARTS 16
 #define USART_RX_BUF_SIZE    4096
 
-/* usart device handles */
-static NE_Uart *usart_device[NUM_USARTS] = {0};
-
-/* public prototypes */
-void nos_destroy_usart_link(void);
-
-/* private prototypes */
-static NE_Uart* nos_get_usart_device(int handle);
-
-/* destroy nos engine usart link */
-void nos_destroy_usart_link(void)
-{
-    int i;
-
-    /* clean up usart buses */
-    for(i = 0; i <= NUM_USARTS; i++)
-    {
-        NE_Uart *dev = usart_device[i];
-        if(dev) NE_uart_close(&dev);
-    }
-}
+/* Track which ports are initialized */
+static uint8_t usart_initialized[NUM_USARTS] = {0};
 
 /* init usart */
 int32_t uart_init_port(uart_info_t* device)
 {
     int32_t status = OS_SUCCESS;
+    int32_t sim_status;
+    
     if(device->handle >= 0 && device->handle < NUM_USARTS)
     {
-
-        /* get usart device handle */
-        NE_Uart **dev = &usart_device[device->handle];
-        if(*dev == NULL)
+        if(!usart_initialized[device->handle])
         {
-            /* get nos usart connection params */
-            const nos_connection_t *con = &nos_usart_connection[device->handle];
-
-            /* try to initialize usart */
-            *dev = NE_uart_open3(hub, "fsw", con->uri, con->bus, device->handle);
-
-            if(*dev)
+            /* Initialize the UART port with Simulith */
+            sim_status = simulith_uart_init(device->handle, NULL);
+            if(sim_status >= 0)  /* Simulith returns bytes written/read on success (>= 0) */
             {
-                /* set default queue size */
-                NE_uart_set_queue_size(*dev, USART_RX_BUF_SIZE);
-
-                device->isOpen = PORT_OPEN;           
-	        }
+                usart_initialized[device->handle] = 1;
+                device->isOpen = PORT_OPEN;
+            }
             else
             {
-                OS_printf("nos uart_open failed\n");
-		        device->isOpen = PORT_CLOSED;
-		        status = OS_ERR_FILE;
+                OS_printf("Simulith uart_init failed with status %d\n", sim_status);
+                device->isOpen = PORT_CLOSED;
+                status = OS_ERR_FILE;
             }
+        }
+        else
+        {
+            /* Port already initialized */
+            device->isOpen = PORT_OPEN;
         }
     }
     else
     {
-        OS_printf("Handle not found\n");
+        OS_printf("Handle %d out of range [0-%d]\n", device->handle, NUM_USARTS-1);
         device->isOpen = PORT_CLOSED;
         status = OS_ERR_FILE;
     }
     return status;
 }
 
-/* get usart device */
-static NE_Uart* nos_get_usart_device(int handle)
-{
-    NE_Uart *dev = NULL;
-    if(handle < NUM_USARTS)
-    {
-        dev = usart_device[handle];
-    }
-    return dev;
-}
-
 /* usart flush */
 int32_t uart_flush(uart_info_t* device)
 {
-    NE_Uart *dev = nos_get_usart_device((int)device->handle);
-    if(dev)
+    int32_t sim_status;
+    uint8_t temp_byte;
+    int32_t bytes_available;
+
+    if(device->handle < NUM_USARTS && usart_initialized[device->handle])
     {
-        NE_uart_flush(dev);
+        /* Get number of bytes in receive buffer */
+        bytes_available = simulith_uart_available(device->handle);
+        if(bytes_available < 0)
+        {
+            OS_printf("Simulith uart_available failed during flush with status %d\n", bytes_available);
+            return OS_ERR_FILE;
+        }
+
+        /* Read and discard all pending data */
+        while(bytes_available > 0)
+        {
+            sim_status = simulith_uart_receive(device->handle, &temp_byte, 1);
+            if(sim_status < 0)
+            {
+                OS_printf("Simulith uart_receive failed during flush with status %d\n", sim_status);
+                return OS_ERR_FILE;
+            }
+            
+            bytes_available = simulith_uart_available(device->handle);
+            if(bytes_available < 0)
+            {
+                OS_printf("Simulith uart_available failed during flush with status %d\n", bytes_available);
+                return OS_ERR_FILE;
+            }
+        }
+        return UART_SUCCESS;
     }
-    return UART_SUCCESS;
+    return OS_ERR_FILE;
 }
 
 /* usart write */
 int32_t uart_write_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
-    int32_t status = OS_ERR_FILE;
-    NE_Uart *dev = nos_get_usart_device((int)device->handle);
-    if(dev)
+    int32_t sim_status;
+
+    if(device->handle < NUM_USARTS && usart_initialized[device->handle])
     {
-        status = NE_uart_write(dev, (const uint8_t*)data, numBytes); //Can this function return -1?
+        sim_status = simulith_uart_send(device->handle, data, numBytes);
+        if(sim_status >= 0)
+        {
+            return sim_status; /* Return actual number of bytes written */
+        }
+        OS_printf("Simulith uart_send failed with status %d\n", sim_status);
     }
-    return status;
+    return OS_ERR_FILE;
 }
 
 /* usart read */
 int32_t uart_read_port(uart_info_t* device, uint8_t data[], const uint32_t numBytes)
 {
-    uint32_t status = OS_ERR_FILE;
-
-    if (data != NULL) //Check that there is actually data to read
-    { 
-        uint8_t c = 0xFF;
-        int  i;
-        int stat;
-        NE_Uart *dev = nos_get_usart_device((int)device->handle);
-        if(dev)
+    if(device->handle < NUM_USARTS && usart_initialized[device->handle] && data != NULL)
+    {
+        uint32_t bytes_read = 0;
+        uint8_t byte;
+        int32_t sim_status;
+        
+        while(bytes_read < numBytes)
         {
-            for (i = 0; i < (int)numBytes; i++) //TODO: Add ability to switch between blocking and non-blocking?
+            sim_status = simulith_uart_receive(device->handle, &byte, 1);
+            if(sim_status > 0)
             {
-                /*
-                //NON BLOCKING MODE
-                stat = NE_uart_getc(dev, (uint8_t*)&c); //Returns 0 if byte read, 1 if no byte actually read
-                if(stat == 1)
-                {
-                    return i; //Causes app to immediately enter service mode
-                }
-                else {
-                    data[i] = c;
-                }
-                */
-                //BLOCKING MODE
-                do {
-                    stat = NE_uart_getc(dev, (uint8_t*)&c);
-                    if (stat == 1)
-                    {
-                        OS_TaskDelay(1);
-                    }
-                } while(stat); 
-                data[i] = c;
+                data[bytes_read++] = byte;
             }
-            status = numBytes;
-            
-            return status;
+            else if(sim_status < 0)
+            {
+                OS_printf("Simulith uart_receive failed with status %d\n", sim_status);
+                return (bytes_read > 0) ? bytes_read : OS_ERR_FILE;
+            }
+            else /* sim_status == 0, no data available */
+            {
+                OS_TaskDelay(1);
+            }
         }
-        return status; //There is data, but can't read from device
+        return bytes_read;
     }
-    return status; //Following arm_inux model
+    return OS_ERR_FILE;
 }
 
 /* usart number bytes available */
 int32_t uart_bytes_available(uart_info_t* device)
 {
-    int bytes = 0;
-    NE_Uart *dev = nos_get_usart_device((int)device->handle);
-    if(dev)
+    int32_t sim_status;
+
+    if(device->handle < NUM_USARTS && usart_initialized[device->handle])
     {
-        bytes = (int)NE_uart_available(dev);
+        sim_status = simulith_uart_available(device->handle);
+        if(sim_status >= 0)
+        {
+            return sim_status;
+        }
+        OS_printf("Simulith uart_available failed with status %d\n", sim_status);
     }
-    return bytes;
+    return 0;
 }
 
 int32_t uart_close_port(uart_info_t* device) 
 {
-    NE_UartStatus status;
-    NE_Uart *dev = nos_get_usart_device((int)device->handle);
-    if (device->handle >= 0)
+    int32_t sim_status;
+
+    if(device->handle >= 0 && device->handle < NUM_USARTS && usart_initialized[device->handle])
     {
-        if(dev)
+        sim_status = simulith_uart_close(device->handle);
+        if(sim_status >= 0)
         {
-            status = NE_uart_close(&dev);
-            usart_device[device->handle] = 0;
+            usart_initialized[device->handle] = 0;
             device->isOpen = PORT_CLOSED;
+            return OS_SUCCESS;
         }
+        OS_printf("Simulith uart_close failed with status %d\n", sim_status);
     }
-    if (status == NE_UART_SUCCESS) {
-        return OS_SUCCESS;
-    }
-    else
-    {
-        return OS_ERROR;
-    }
-    
+    return OS_ERROR;
 }

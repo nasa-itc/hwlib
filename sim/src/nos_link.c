@@ -159,7 +159,7 @@ nos_connection_t nos_spi_connection[NUM_SPI_DEVICES] = {
 NE_TransportHub *hub = NULL;
 
 /* internal hardware bus init/destroy */
-extern void nos_destroy_usart_link(void);
+//extern void nos_destroy_usart_link(void);
 extern void nos_init_i2c_link(void);
 extern void nos_destroy_i2c_link(void);
 extern void nos_init_can_link(void);
@@ -186,7 +186,7 @@ void nos_destroy_link(void)
     OS_printf("destroying nos engine link...\n");
 
     /* destroy buses */
-    nos_destroy_usart_link();
+    //nos_destroy_usart_link();
     nos_destroy_i2c_link();
     nos_destroy_can_link();
     nos_destroy_spi_link();

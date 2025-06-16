@@ -125,7 +125,7 @@ int32_t trq_init(trq_info_t* device)
         
         // Look up `trq_sim` from hostname
         char ip[16];
-        int check = HostToIp("trq_sim", ip);
+        int check = HostToIp("trq-sim", ip);
         if(check == 0)
         {
             servaddr.sin_addr.s_addr = inet_addr(ip);

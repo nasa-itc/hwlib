@@ -27,6 +27,7 @@ ivv-itc@lists.nasa.gov
 
 /* hwlib API */
 #include "libtrq.h"
+#include "libsocket.h"
 
 static int num_conn_errors = 0;
 static int num_send_errors = 0;
@@ -117,10 +118,18 @@ int32_t trq_init(trq_info_t* device)
         }
     
         memset(&servaddr, 0, sizeof(servaddr));
+        
         // Filling server information 
         servaddr.sin_family = AF_INET;
         servaddr.sin_port = htons(PORT);
-        servaddr.sin_addr.s_addr = INADDR_ANY;
+        
+        // Look up `trq_sim` from hostname
+        char ip[16];
+        int check = HostToIp("trq-sim", ip);
+        if(check == 0)
+        {
+            servaddr.sin_addr.s_addr = inet_addr(ip);
+        }
     }
 
     return status;

@@ -306,6 +306,7 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
     int ret;
     int32_t status;
     struct sockaddr_in remote_sockaddr;
+    int sys_address_family;
     status = SOCKET_SUCCESS;
 
    switch(socket_info->type)
@@ -333,7 +334,22 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
         case dgram:
         {
             // Prepare the remote_sockaddr structure 
-            remote_sockaddr.sin_family = socket_info->address_family;
+            if(socket_info->address_family == ip_ver_4)
+            {
+                sys_address_family = AF_INET;
+            }
+            else if(socket_info->address_family == ip_ver_6)
+            {
+                sys_address_family = AF_INET6;
+            }
+            else
+            {
+                status = SOCKET_SEND_ERR;
+                return status;        
+            }
+            //prepping remote_scokaddr struct
+            remote_sockaddr.sin_family = sys_address_family;
+            
             if(inet_addr(remote_ip_address) != INADDR_NONE)
             {
                 remote_sockaddr.sin_addr.s_addr = inet_addr(remote_ip_address);
@@ -345,6 +361,12 @@ int32_t socket_send(socket_info_t* socket_info, uint8_t* buffer, size_t buflen, 
                 if(check == 0)
                 {
                     remote_sockaddr.sin_addr.s_addr = inet_addr(ip);
+                }
+                else 
+                {
+                    OS_printf("socket_send: HostToIp failed to resolve %s\n", remote_ip_address);
+                    status = SOCKET_SEND_ERR;
+                    return status;
                 }
             }
             remote_sockaddr.sin_port = htons(remote_port_num);
